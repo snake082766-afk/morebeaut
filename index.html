@@ -1,0 +1,563 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>茉本喚醒追蹤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF7F0; --card:#FFFFFF; --tint:#F4EFE4; --line:#E4DDCD;
+  --gold:#9C7C33; --gold-soft:#C2A461; --gold-wash:rgba(156,124,51,.06);
+  --ink:#2B2721; --mute:#8B8275;
+  --ok:#5B8A6B; --warn:#B58432; --stop:#AF5A4C;
+  --sans:'Noto Sans TC',system-ui,sans-serif; --serif:'Noto Serif TC',serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:400;
+  font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom)}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:16px;color:var(--ink);background:var(--card);
+  border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold-soft);
+  box-shadow:0 0 0 3px var(--gold-wash)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+.rule{height:1px;background:linear-gradient(90deg,var(--gold-soft),transparent);opacity:.6}
+
+header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0 12px}
+.brand{font-family:var(--serif);font-weight:700;font-size:16px;letter-spacing:.16em;color:var(--gold)}
+.who{font-size:11.5px;color:var(--mute);letter-spacing:.05em;text-align:right;line-height:1.35}
+.who b{display:block;color:var(--ink);font-weight:500;font-size:13px;letter-spacing:.02em}
+
+.prog{padding:12px 0 14px}
+.pnums{display:flex;gap:20px;align-items:baseline}
+.pn{display:flex;align-items:baseline;gap:5px}
+.pn i{font-style:normal;font-family:var(--serif);font-size:23px;font-weight:700;color:var(--gold);
+  font-variant-numeric:tabular-nums}
+.pn s{text-decoration:none;font-size:11px;color:var(--mute);letter-spacing:.1em}
+.bar{height:3px;background:var(--line);margin-top:11px;border-radius:3px;overflow:hidden}
+.bar div{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));
+  transition:width .5s cubic-bezier(.2,.8,.3,1)}
+
+.filters{display:flex;gap:7px;overflow-x:auto;padding:11px 16px;margin:0 -16px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fc{flex:0 0 auto;padding:6px 13px;border:1px solid var(--line);border-radius:99px;background:var(--card);
+  font-size:12.5px;color:var(--mute);white-space:nowrap;transition:.18s}
+.fc[aria-pressed=true]{border-color:var(--gold-soft);color:var(--gold);background:var(--gold-wash);font-weight:500}
+
+.list{padding:2px 0 90px}
+.mc{width:100%;text-align:left;display:block;background:var(--card);border:1px solid var(--line);
+  border-left:3px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:9px;transition:.18s;
+  box-shadow:0 1px 2px rgba(43,39,33,.04)}
+.mc:active{transform:scale(.988)}
+.mc.done{border-left-color:var(--ok)}
+.mc.blocked{border-left-color:var(--stop)}
+.mc.intent{border-left-color:var(--gold)}
+.mrow{display:flex;align-items:center;gap:9px}
+.mname{font-size:16px;font-weight:500;letter-spacing:.02em}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:4px;letter-spacing:.06em;font-weight:500;
+  border:1px solid var(--line);color:var(--mute);background:var(--tint)}
+.tag.A{color:#fff;border-color:var(--gold);background:var(--gold)}
+.tag.B{color:var(--gold);border-color:var(--gold-soft);background:var(--gold-wash)}
+.mstate{margin-left:auto;font-size:11.5px;letter-spacing:.04em;color:var(--mute)}
+.mstate.ok{color:var(--ok)} .mstate.stop{color:var(--stop)} .mstate.gold{color:var(--gold);font-weight:500}
+.mmeta{font-size:11.5px;color:var(--mute);margin-top:6px;letter-spacing:.02em}
+.hook{margin-top:9px;padding:9px 11px;background:var(--tint);border-left:2px solid var(--gold-soft);
+  border-radius:0 5px 5px 0;font-size:12.5px;line-height:1.55;color:#5C5348}
+.hook b{color:var(--gold);font-weight:700}
+
+.scrim{position:fixed;inset:0;background:rgba(43,39,33,.42);z-index:40;opacity:0;pointer-events:none;transition:.25s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--paper);
+  border-top:2px solid var(--gold-soft);border-radius:16px 16px 0 0;
+  box-shadow:0 -8px 32px rgba(43,39,33,.14);
+  transform:translateY(102%);transition:transform .3s cubic-bezier(.2,.8,.3,1);
+  max-height:92vh;overflow-y:auto;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.sheet.on{transform:translateY(0)}
+.grab{width:34px;height:4px;background:var(--line);border-radius:4px;margin:9px auto 0}
+.sh{padding:14px 18px 0}
+.sh h3{font-family:var(--serif);font-size:19px;font-weight:700;margin:0 0 3px;letter-spacing:.03em}
+.sh p{margin:0;font-size:12px;color:var(--mute)}
+.sb{padding:16px 18px 0}
+.fld{margin-bottom:15px}
+.lb{font-size:11.5px;color:var(--mute);letter-spacing:.1em;margin-bottom:7px;display:block}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px;color:var(--mute);
+  background:var(--card);transition:.18s}
+.seg button[aria-pressed=true]{border-color:var(--gold);color:var(--gold);background:var(--gold-wash);font-weight:500}
+.blocks{display:flex;flex-direction:column;gap:7px}
+.blocks button{text-align:left;padding:11px 13px;border:1px solid var(--line);border-radius:8px;background:var(--card);
+  font-size:13.5px;color:var(--mute);display:flex;gap:10px;align-items:flex-start;transition:.18s}
+.blocks button[aria-pressed=true]{border-color:var(--gold);color:var(--ink);background:var(--gold-wash)}
+.blocks em{font-style:normal;font-size:11px;color:var(--mute);display:block;margin-top:2px}
+.blocks button[aria-pressed=true] em{color:var(--gold)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line);margin-top:7px;flex:0 0 auto}
+.blocks button[aria-pressed=true] .dot{background:var(--gold)}
+.save{width:100%;padding:15px;background:var(--gold);color:#FFF;font-weight:700;font-size:15px;
+  border-radius:9px;letter-spacing:.06em;margin-top:4px}
+.save:disabled{background:var(--line);color:var(--mute)}
+.skip{width:100%;padding:12px;font-size:13px;color:var(--mute);margin-top:6px}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:4px}
+.tabs button{flex:1;padding:13px 0;font-size:13.5px;color:var(--mute);border-bottom:2px solid transparent;letter-spacing:.05em}
+.tabs button[aria-pressed=true]{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+.tt{width:100%;border-collapse:collapse;margin-top:6px}
+.tt th{font-size:10.5px;color:var(--mute);letter-spacing:.09em;font-weight:400;text-align:right;
+  padding:9px 6px;border-bottom:1px solid var(--line)}
+.tt th:first-child{text-align:left}
+.tt td{padding:13px 6px;border-bottom:1px solid var(--line);text-align:right;font-size:14px;
+  font-variant-numeric:tabular-nums}
+.tt td:first-child{text-align:left;font-size:13.5px;letter-spacing:.04em;font-weight:500}
+.tt td.g{color:var(--gold);font-family:var(--serif);font-weight:700}
+.tt tr.blank td{color:#C9C1B2}
+.sect{font-family:var(--serif);font-size:13px;letter-spacing:.14em;color:var(--gold);
+  margin:26px 0 10px;font-weight:700}
+.bl{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.bl i{font-style:normal;font-family:var(--serif);font-size:17px;color:var(--gold);min-width:26px;
+  font-variant-numeric:tabular-nums;font-weight:700}
+.bl s{text-decoration:none;color:var(--mute);font-size:12px;margin-left:auto}
+.note{font-size:11.5px;color:var(--mute);line-height:1.7;padding:14px 0 30px}
+
+.login{padding:44px 0 30px}
+.login h1{font-family:var(--serif);font-size:25px;font-weight:700;letter-spacing:.1em;margin:0 0 6px;color:var(--gold)}
+.login p{font-size:13px;color:var(--mute);margin:0 0 26px}
+.ug{display:flex;flex-direction:column;gap:8px}
+.ub{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;text-align:left;transition:.18s;
+  box-shadow:0 1px 2px rgba(43,39,33,.04)}
+.ub:active{transform:scale(.99)}
+.ub b{font-weight:500;font-size:15px}
+.ub s{text-decoration:none;font-size:11px;color:var(--mute);display:block;margin-top:2px}
+.ub em{font-style:normal;margin-left:auto;font-family:var(--serif);font-size:19px;color:var(--gold);
+  font-variant-numeric:tabular-nums;font-weight:700}
+.ub em span{font-size:10px;color:var(--mute);font-family:var(--sans);margin-left:2px;font-weight:400}
+.more{width:100%;padding:13px;font-size:12.5px;color:var(--gold);border:1px dashed var(--line);
+  border-radius:9px;margin-top:10px;background:var(--card)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,26px);background:var(--ink);
+  color:var(--paper);padding:11px 22px;border-radius:99px;font-size:13.5px;font-weight:500;z-index:80;
+  opacity:0;transition:.28s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(43,39,33,.2)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+.batchnote{font-size:12px;color:var(--mute);line-height:1.75;padding:16px 14px;margin:4px 0 2px;
+  background:var(--tint);border-radius:9px;border-left:2px solid var(--gold-soft)}
+.empty{text-align:center;padding:52px 20px;color:var(--mute);font-size:13.5px;line-height:1.8}
+</style>
+
+<div id="app"></div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = {"uplines": [{"n": "必聖企業社", "t": "TOP", "lv": "聯合董事創辦⼈", "c": 55}, {"n": "尤安娜企業社", "t": "PRINCESSES", "lv": "董事經銷商", "c": 48}, {"n": "子茗企業社", "t": "RICH", "lv": "董事經銷商", "c": 32}, {"n": "慕妍生技企業社", "t": "THE ONE", "lv": "董事經銷商", "c": 30}, {"n": "曾郁珊", "t": "TOP", "lv": "董事經銷商", "c": 23}, {"n": "梁靜倫", "t": "TOP", "lv": "董事經銷商", "c": 16}, {"n": "歆宸企業社", "t": "THE ONE", "lv": "董事經銷商", "c": 12}, {"n": "林鳳姿", "t": "TOP", "lv": "董事經銷商", "c": 9}, {"n": "曾沛語", "t": "TOP", "lv": "董事經銷商", "c": 8}, {"n": "李雅錡", "t": "RICH", "lv": "副總經銷商", "c": 6}, {"n": "顏婕茹", "t": "TOP", "lv": "總監經銷商", "c": 5}, {"n": "張靖珮", "t": "TOP", "lv": "總監經銷商", "c": 4}, {"n": "有勝企業社", "t": "PRINCESSES", "lv": "董事經銷商", "c": 4}, {"n": "林永隆", "t": "THE ONE", "lv": "董事經銷商", "c": 3}, {"n": "沐邑企業社", "t": "PRINCESSES", "lv": "副總經銷商", "c": 3}, {"n": "游荃棻", "t": "RICH", "lv": "董事經銷商", "c": 3}, {"n": "呂心彤", "t": "THE ONE", "lv": "總監經銷商", "c": 3}, {"n": "張雅雯", "t": "TOP", "lv": "副總經銷商", "c": 3}, {"n": "張芷瑄", "t": "PRINCESSES", "lv": "副總經銷商", "c": 3}, {"n": "吳卉羚", "t": "TOP", "lv": "副總經銷商", "c": 3}, {"n": "王芷淇", "t": "PRINCESSES", "lv": "總監經銷商", "c": 3}, {"n": "葉芳竹", "t": "TOP", "lv": "總監經銷商", "c": 3}, {"n": "林芷瑄", "t": "TOP", "lv": "總監經銷商", "c": 2}, {"n": "盧乃禎", "t": "PRINCESSES", "lv": "總監經銷商", "c": 2}, {"n": "涂雅惠", "t": "TOP", "lv": "總監經銷商", "c": 2}, {"n": "林湘芸", "t": "PRINCESSES", "lv": "總監經銷商", "c": 2}, {"n": "林巧淳", "t": "THE ONE", "lv": "區域經銷商", "c": 2}, {"n": "彭子宸", "t": "RICH", "lv": "總監經銷商", "c": 2}, {"n": "黃念慈", "t": "PRINCESSES", "lv": "區域經銷商", "c": 2}, {"n": "朱珮菱", "t": "PRINCESSES", "lv": "總監經銷商", "c": 2}, {"n": "孫宥心", "t": "THE ONE", "lv": "總監經銷商", "c": 1}, {"n": "施畇云", "t": "RICH", "lv": "區域經銷商", "c": 1}, {"n": "吳金玲", "t": "PRINCESSES", "lv": "總監經銷商", "c": 1}, {"n": "傅名芳", "t": "RICH", "lv": "總監經銷商", "c": 1}, {"n": "吳雅涵", "t": "PRINCESSES", "lv": "總監經銷商", "c": 1}, {"n": "廖婉羚", "t": "RICH", "lv": "區域經銷商", "c": 1}, {"n": "曾品綺", "t": "TOP", "lv": "總監經銷商", "c": 1}, {"n": "洪依晨", "t": "THE ONE", "lv": "總監經銷商", "c": 1}, {"n": "江婕菱", "t": "TOP", "lv": "區域經銷商", "c": 1}, {"n": "林士弘", "t": "THE ONE", "lv": "VVIP 實習⽣", "c": 1}, {"n": "林小萍", "t": "PRINCESSES", "lv": "區域經銷商", "c": 1}, {"n": "江至惠", "t": "TOP", "lv": "區域經銷商", "c": 1}, {"n": "王玉琪", "t": "THE ONE", "lv": "副總經銷商", "c": 1}, {"n": "王渝婷", "t": "THE ONE", "lv": "總監經銷商", "c": 1}, {"n": "胡詠婷", "t": "THE ONE", "lv": "副總經銷商", "c": 1}, {"n": "籃芷渝", "t": "PRINCESSES", "lv": "區域經銷商", "c": 1}, {"n": "白繡華", "t": "PRINCESSES", "lv": "區域經銷商", "c": 1}, {"n": "許祕淑", "t": "THE ONE", "lv": "區域經銷商", "c": 1}, {"n": "鍾宜君", "t": "PRINCESSES", "lv": "區域經銷商", "c": 1}, {"n": "鄭雅萍", "t": "TOP", "lv": "總監經銷商", "c": 1}, {"n": "陳思蓓", "t": "THE ONE", "lv": "總監經銷商", "c": 1}, {"n": "顏瑞緹", "t": "RICH", "lv": "區域經銷商", "c": 1}], "members": [{"u": "必聖企業社", "t": "TOP", "n": "曾沛語", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "買1送1－夏日保養組"}, {"u": "必聖企業社", "t": "TOP", "n": "曾郁珊", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/21", "sm": 0.4, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "必聖企業社", "t": "TOP", "n": "林鳳姿", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/27", "sm": 0.2, "p": "買1送1－日常保養組"}, {"u": "必聖企業社", "t": "TOP", "n": "黃佩潔", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/21", "sm": 0.4, "p": "SV超水光珍珠亮妍粉－3入優惠組"}, {"u": "必聖企業社", "t": "TOP", "n": "胡慧君", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/30", "sm": 0.1, "p": "SV超水光珍珠亮妍粉－3入優惠組"}, {"u": "必聖企業社", "t": "TOP", "n": "吳佩宜", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/06", "sm": 0.9, "p": "王者計劃－第一期"}, {"u": "必聖企業社", "t": "TOP", "n": "李蕎潔", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/06/20", "sm": 1.4, "p": "森挪威－控油深層髮浴 (500mL)"}, {"u": "必聖企業社", "t": "TOP", "n": "洪意鵑", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/13", "sm": 0.7, "p": "自然實驗室－Q1輕纖飲"}, {"u": "必聖企業社", "t": "TOP", "n": "簡郁臻", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "必聖企業社", "t": "TOP", "n": "林曉如", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "口碑保養組"}, {"u": "必聖企業社", "t": "TOP", "n": "蔡怡萱", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "免沖組合－限定加購"}, {"u": "必聖企業社", "t": "TOP", "n": "丁怡佳", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "必聖企業社", "t": "TOP", "n": "賴麗安", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "必聖企業社", "t": "TOP", "n": "黃緣晞", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "必聖企業社", "t": "TOP", "n": "詹千僾", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/04", "sm": 3.0, "p": "買9送7－Q1尊享旗艦組"}, {"u": "必聖企業社", "t": "TOP", "n": "張育綺", "g": "C", "gn": "帶線沉睡", "st": "輕度沉睡", "ld": "2026/05/22", "sm": 2.4, "p": "嫩白私密呵護組"}, {"u": "必聖企業社", "t": "TOP", "n": "葉芷廷", "g": "C", "gn": "帶線沉睡", "st": "中度沉睡", "ld": "2026/03/05", "sm": 4.9, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "黃雅琪", "g": "C", "gn": "帶線沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "買2送1－口碑回購組"}, {"u": "必聖企業社", "t": "TOP", "n": "王郁蓁", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "免沖洗結構護髮素"}, {"u": "必聖企業社", "t": "TOP", "n": "王芷嘉", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/09", "sm": 2.8, "p": "買2送2－亮妍雙重奏"}, {"u": "必聖企業社", "t": "TOP", "n": "蔡孟凌", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/19", "sm": 3.4, "p": "免沖洗結構護髮素"}, {"u": "必聖企業社", "t": "TOP", "n": "葉叡琪", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "黃旻錞", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "李育慈", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "丘嫕安", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "隨身瓶－免沖洗結構護髮素 10ML（支）"}, {"u": "必聖企業社", "t": "TOP", "n": "張家榛", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "嫩白私密呵護組"}, {"u": "必聖企業社", "t": "TOP", "n": "陳怡萱", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "李欣瑜", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "買2送1－口碑回購組"}, {"u": "必聖企業社", "t": "TOP", "n": "吳庭萱", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "嫩白私密呵護組"}, {"u": "必聖企業社", "t": "TOP", "n": "廖盈婷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "隨身瓶－免沖洗結構護髮素 10ML（支）"}, {"u": "必聖企業社", "t": "TOP", "n": "陳映璇", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/22", "sm": 2.4, "p": "買1送1－髮根強化組"}, {"u": "必聖企業社", "t": "TOP", "n": "張芷庭", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/12", "sm": 4.7, "p": "自然實驗室－Q1輕纖飲"}, {"u": "必聖企業社", "t": "TOP", "n": "歐珈均", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/20", "sm": 3.4, "p": "隨身瓶－免沖洗結構護髮素 10ML（支）"}, {"u": "必聖企業社", "t": "TOP", "n": "王郁雯", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/28", "sm": 2.2, "p": "買1送1－明星養膚組"}, {"u": "必聖企業社", "t": "TOP", "n": "林姿秀", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "王鈺婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/25", "sm": 2.3, "p": "買1送1－首選推薦組"}, {"u": "必聖企業社", "t": "TOP", "n": "蔡雨潔", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "陳億陵", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "買2送1－口碑回購組"}, {"u": "必聖企業社", "t": "TOP", "n": "趙皓暘", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/31", "sm": 2.1, "p": "買2送1－口碑回購組"}, {"u": "必聖企業社", "t": "TOP", "n": "陳芊邑", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "買1送1－髮根強化組"}, {"u": "必聖企業社", "t": "TOP", "n": "張淑華", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/27", "sm": 4.2, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "梁子樂", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/25", "sm": 2.3, "p": "買1送1－明星養膚組"}, {"u": "必聖企業社", "t": "TOP", "n": "賴妍辰", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "必聖企業社", "t": "TOP", "n": "林美妙", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/25", "sm": 4.3, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "楊貽婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/04", "sm": 1.9, "p": "買3送1－首選入門組"}, {"u": "必聖企業社", "t": "TOP", "n": "蔡昕芸", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "必聖企業社", "t": "TOP", "n": "留慧欣", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "買1送1－髮根強化組"}, {"u": "必聖企業社", "t": "TOP", "n": "李翊瑄", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "買2送1－強健髮根組"}, {"u": "必聖企業社", "t": "TOP", "n": "陳宛琳", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "買2送1－柔順光澤組"}, {"u": "必聖企業社", "t": "TOP", "n": "鄧采婕", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "周蕙玉", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "買2送2－膠原雙重奏"}, {"u": "必聖企業社", "t": "TOP", "n": "朱怡瑄", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "必聖企業社", "t": "TOP", "n": "王藝真", "g": "E", "gn": "主幹斷點", "st": "重度沉睡", "ld": "2025/12/26", "sm": 7.2, "p": "買1送1－免沖洗結構護髮素"}, {"u": "必聖企業社", "t": "TOP", "n": "吳佩真", "g": "E", "gn": "主幹斷點", "st": "重度沉睡", "ld": "2025/12/03", "sm": 8.0, "p": "買1送1－極致還原護髮膜"}, {"u": "必聖企業社", "t": "TOP", "n": "江慧虹", "g": "E", "gn": "主幹斷點", "st": "重度沉睡", "ld": "2025/12/20", "sm": 7.4, "p": "【預購3】買1送1－免沖洗結構護髮素"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "沐邑企業社", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "森挪威－零躁感順髮噴霧"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "盧乃禎", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "極致養膚身體乳－2入優惠組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "林湘芸", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/02", "sm": 1.0, "p": "買10送4－尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "李美薇", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "森挪威－控油深層髮浴"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "黃雨馨", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/06", "sm": 0.9, "p": "王者計劃－第一期"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "許家甄", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/03", "sm": 1.0, "p": "買10送4－尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "吳金玲", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "徐宛筠", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/06/04", "sm": 1.9, "p": "買10送7－超值旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "張倇瑄", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "黃念慈", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "免沖洗結構護髮素"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "鍾佳容", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "潘語莘", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/03", "sm": 1.0, "p": "買10送4－尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "林宜萱", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/25", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "陳緣緣", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "王芷淇", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/06/19", "sm": 1.4, "p": "森挪威－雪松調沐浴 (500mL)"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "白繡華", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/06/18", "sm": 1.5, "p": "口碑保養組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "鄭詠方", "g": "C", "gn": "帶線沉睡", "st": "輕度沉睡", "ld": "2026/05/25", "sm": 2.3, "p": "買1送1－首選推薦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "宋庭萱", "g": "C", "gn": "帶線沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "森挪威－零躁感順髮噴霧"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "羅思茹", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "靈芝組合－限定加購"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "尹婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "森挪威－金萃賦活精華油 (60mL)"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "陳笳甄", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/14", "sm": 4.6, "p": "精油沐浴組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "黃璿綺", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/03", "sm": 5.0, "p": "醫師推薦組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "謝嘉琪", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/17", "sm": 4.5, "p": "口碑回購組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "孫郁雯", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "吳映慧", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/22", "sm": 2.4, "p": "買1送1－明星養膚組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "林婉萍", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "江依庭", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/22", "sm": 2.4, "p": "買1送1－髮根強化組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "陳思瑜", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/08", "sm": 4.8, "p": "買2送1－柔順光澤組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "任雅萍", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "森挪威－零躁感順髮噴霧"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "沈思瑩", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/19", "sm": 4.5, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "李怡璇", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "陳怡珊", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "口碑回購組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "林淑荃", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/14", "sm": 4.6, "p": "森挪威－品牌設計師包款"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "王書敏", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "張琦梅", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "森挪威－零躁感順髮噴霧"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "蔡靜柔", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "張之菱", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/05", "sm": 4.9, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "鮑佩玟", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "森挪威－絲漾柔護髮浴 (500mL)"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "方辰語", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "免沖洗結構護髮素"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "黃鈺婷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "吳家妮", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/26", "sm": 3.2, "p": "買2送2－膠原雙重奏"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "李淑華", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買2送2－膠原雙重奏"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "邱雅筠", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "買1送1－順暢首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "何禹臻", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/04", "sm": 3.0, "p": "買2送2－膠原雙重奏"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "歐惠菊", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "獲獎肯定組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "林筱軒", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "陳盈雅", "g": "E", "gn": "主幹斷點", "st": "重度沉睡", "ld": "2025/12/01", "sm": 8.0, "p": "買1送1－SPA舒緩頭皮調理凍膜"}, {"u": "尤安娜企業社", "t": "PRINCESSES", "n": "蔡毓庭", "g": "E", "gn": "主幹斷點", "st": "重度沉睡", "ld": "2025/10/27", "sm": 9.2, "p": "【預購】買1送1－淨化頭皮養髮調理液"}, {"u": "子茗企業社", "t": "RICH", "n": "彭子宸", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/20", "sm": 0.4, "p": "森挪威－控油深層髮浴"}, {"u": "子茗企業社", "t": "RICH", "n": "王容慈", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/25", "sm": 0.3, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "子茗企業社", "t": "RICH", "n": "李雅錡", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買6送2－管理計畫組"}, {"u": "子茗企業社", "t": "RICH", "n": "楊家樂", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "子茗企業社", "t": "RICH", "n": "柯麗秋", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "子茗企業社", "t": "RICH", "n": "林盈甄", "g": "C", "gn": "帶線沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "森挪威－控油深層髮浴 (500mL)"}, {"u": "子茗企業社", "t": "RICH", "n": "蕭睿誼", "g": "C", "gn": "帶線沉睡", "st": "輕度沉睡", "ld": "2026/06/12", "sm": 1.7, "p": "Q1輕纖飲－任選3盒優惠組"}, {"u": "子茗企業社", "t": "RICH", "n": "周雅霜", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "買1送1－活絡頭皮組"}, {"u": "子茗企業社", "t": "RICH", "n": "李綉琪", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/06", "sm": 5.8, "p": "森挪威－極致還原護髮膜"}, {"u": "子茗企業社", "t": "RICH", "n": "陳閔柔", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/06", "sm": 3.9, "p": "森挪威－靜謐森林沐浴"}, {"u": "子茗企業社", "t": "RICH", "n": "李雅萱", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "買2送1－口碑回購組"}, {"u": "子茗企業社", "t": "RICH", "n": "廖晏瑩", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "免沖組合－限定加購"}, {"u": "子茗企業社", "t": "RICH", "n": "李愛婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "深層修護組"}, {"u": "子茗企業社", "t": "RICH", "n": "黃瓊慧", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "子茗企業社", "t": "RICH", "n": "許品琪", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/27", "sm": 2.2, "p": "自然實驗室－Q1輕纖飲"}, {"u": "子茗企業社", "t": "RICH", "n": "黃雅婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "子茗企業社", "t": "RICH", "n": "洪翊苓", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "口碑回購組"}, {"u": "子茗企業社", "t": "RICH", "n": "李溦倩", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "柔嫩護膚組"}, {"u": "子茗企業社", "t": "RICH", "n": "高子芸", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/06", "sm": 5.8, "p": "豐盈強韌組合"}, {"u": "子茗企業社", "t": "RICH", "n": "賴宣合", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/08", "sm": 3.8, "p": "自然實驗室－Q1輕纖飲"}, {"u": "子茗企業社", "t": "RICH", "n": "洪淑惠", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "子茗企業社", "t": "RICH", "n": "陳怡君", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/05", "sm": 5.8, "p": "免沖洗結構護髮素"}, {"u": "子茗企業社", "t": "RICH", "n": "陳璟德", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/28", "sm": 2.2, "p": "嫩白私密呵護組"}, {"u": "子茗企業社", "t": "RICH", "n": "陳雅虹", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "嫩白私密呵護組"}, {"u": "子茗企業社", "t": "RICH", "n": "郭蕓慈", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/21", "sm": 3.4, "p": "森挪威－賦活頭皮養髮調理液"}, {"u": "子茗企業社", "t": "RICH", "n": "鍾文琳", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/22", "sm": 2.4, "p": "買1送1－活絡頭皮組"}, {"u": "子茗企業社", "t": "RICH", "n": "周玫萱", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/30", "sm": 2.1, "p": "涼感私密呵護組"}, {"u": "子茗企業社", "t": "RICH", "n": "邱淳琳", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "子茗企業社", "t": "RICH", "n": "郭憶瑩", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "買2送2－亮妍雙重奏"}, {"u": "子茗企業社", "t": "RICH", "n": "林家汝", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/04", "sm": 1.9, "p": "買3送1－首選入門組"}, {"u": "子茗企業社", "t": "RICH", "n": "侯寶韻", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "子茗企業社", "t": "RICH", "n": "羅秋子", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/10", "sm": 1.7, "p": "免沖洗結構護髮素"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "陳莉渝", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "買1送1－日常保養組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "洪誼頻", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/30", "sm": 0.1, "p": "自然實驗室－Q1輕纖飲"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "孫宥心", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/06", "sm": 0.9, "p": "王者計劃－第一期"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "林芯瑩", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "SV超水光珍珠亮妍粉－3入優惠組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "謝瓊萱", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "買2送1－推薦保養組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "林巧淳", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買3送1－入門啟動組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "鄭釗雯", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "鄧尹慎", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "蔡宛伶", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "高絲妍", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/29", "sm": 0.1, "p": "買6送4－口碑旗艦組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "王巧欣", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "買1送1－日常保養組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "黃芸儀", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/06", "sm": 0.9, "p": "王者計劃－第一期"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "許祕淑", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買6送2－管理計畫組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "王渝婷", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/25", "sm": 0.3, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "江逸萱", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/06/23", "sm": 1.3, "p": "森挪威－控油深層髮浴"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "洪依晨", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "陳怡如", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/28", "sm": 2.2, "p": "嫩白私密呵護組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "侯彩鳳", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "買2送2－膠原雙重奏"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "羅悅方", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/06", "sm": 4.9, "p": "森挪威－品牌提袋"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "鄭熙醴", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/26", "sm": 2.2, "p": "隨身瓶－金萃賦活精華油10ML（支）"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "黃文蒨", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/29", "sm": 2.1, "p": "買2送1－口碑回購組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "彭欣雅", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/11", "sm": 1.7, "p": "森挪威－控油深層髮浴"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "童雅惠", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/23", "sm": 2.3, "p": "買1送1－活絡頭皮組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "廖瑀涵", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/26", "sm": 5.2, "p": "森挪威－控油深層髮浴"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "劉晏彤", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/14", "sm": 3.6, "p": "買2送2－膠原雙重奏"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "郭雅雯", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "買2送1－柔順光澤組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "夏慧", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/04", "sm": 1.9, "p": " 買5送2－管理養成組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "林庭伊", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "買2送1－柔順光澤組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "吳欣俞", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/31", "sm": 2.1, "p": "買1送1－首選推薦組"}, {"u": "慕妍生技企業社", "t": "THE ONE", "n": "施宥榛", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/17", "sm": 2.5, "p": "森挪威－絲漾柔護髮浴"}, {"u": "曾郁珊", "t": "TOP", "n": "張雅雯", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "曾郁珊", "t": "TOP", "n": "鄭雅萍", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/21", "sm": 0.4, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "曾郁珊", "t": "TOP", "n": "林冠吟", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/29", "sm": 0.1, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "曾郁珊", "t": "TOP", "n": "蕭雅倫", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "曾郁珊", "t": "TOP", "n": "陳雅萍", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買6送2－管理計畫組"}, {"u": "曾郁珊", "t": "TOP", "n": "黃尹甯", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "曾郁珊", "t": "TOP", "n": "黃郁晴", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "曾郁珊", "t": "TOP", "n": "盧昱云", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/23", "sm": 2.3, "p": "買1送1－髮根強化組"}, {"u": "曾郁珊", "t": "TOP", "n": "吳子瑜", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/04", "sm": 3.0, "p": "森挪威－品牌提袋"}, {"u": "曾郁珊", "t": "TOP", "n": "王婕恩", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/24", "sm": 5.2, "p": "森挪威－控油深層髮浴"}, {"u": "曾郁珊", "t": "TOP", "n": "賴婕綾", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "買1送1－首選推薦組"}, {"u": "曾郁珊", "t": "TOP", "n": "李佩珊", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/26", "sm": 5.2, "p": "森挪威－絲漾柔護髮浴"}, {"u": "曾郁珊", "t": "TOP", "n": "潘靜瑩", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/12", "sm": 3.7, "p": "買2送2－亮妍雙重奏"}, {"u": "曾郁珊", "t": "TOP", "n": "李俐伶", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/30", "sm": 4.1, "p": "營養師首選組"}, {"u": "曾郁珊", "t": "TOP", "n": "范紫淇", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/26", "sm": 2.2, "p": "買2送1－口碑回購組"}, {"u": "曾郁珊", "t": "TOP", "n": "黃詩雅", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "曾郁珊", "t": "TOP", "n": "陳彥廷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "精油沐浴組"}, {"u": "曾郁珊", "t": "TOP", "n": "楊雅筑", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "昆凌私享 4週有效養髮 - 莘生靈芝養髮浴"}, {"u": "曾郁珊", "t": "TOP", "n": "陳佳鈴", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "曾郁珊", "t": "TOP", "n": "李芊鏵", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/28", "sm": 2.2, "p": "嫩白私密呵護組"}, {"u": "曾郁珊", "t": "TOP", "n": "林子芸", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/23", "sm": 2.3, "p": "買1送1－髮根強化組"}, {"u": "曾郁珊", "t": "TOP", "n": "趙玟喬", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/28", "sm": 2.2, "p": "買2送1－口碑回購組"}, {"u": "曾郁珊", "t": "TOP", "n": "張愛晨", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/03", "sm": 4.0, "p": "森挪威－絲漾柔護髮浴"}, {"u": "梁靜倫", "t": "TOP", "n": "楊秀怡", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "梁靜倫", "t": "TOP", "n": "熊愛琳", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "梁靜倫", "t": "TOP", "n": "許珮甄", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "梁靜倫", "t": "TOP", "n": "呂雅筑", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/07", "sm": 2.9, "p": "買9送7－Q1尊享旗艦組"}, {"u": "梁靜倫", "t": "TOP", "n": "邱依宸", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "梁靜倫", "t": "TOP", "n": "余盈慧", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "梁靜倫", "t": "TOP", "n": "王圓圓", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "森挪威－極致還原護髮膜 (350mL)"}, {"u": "梁靜倫", "t": "TOP", "n": "徐珮婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "梁靜倫", "t": "TOP", "n": "康宏軒", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/31", "sm": 2.1, "p": "免沖組合－限定加購"}, {"u": "梁靜倫", "t": "TOP", "n": "鍾依玲", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "醫師推薦組"}, {"u": "梁靜倫", "t": "TOP", "n": "李秀玲", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買2送1－口碑回購組"}, {"u": "梁靜倫", "t": "TOP", "n": "蕭喬予", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "森挪威－日本 BA+ 抑菌手洗精"}, {"u": "梁靜倫", "t": "TOP", "n": "袁琳媚", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買2送1－口碑回購組"}, {"u": "梁靜倫", "t": "TOP", "n": "趙芝儀", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "嫩白私密呵護組"}, {"u": "梁靜倫", "t": "TOP", "n": "邱妍庭", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "梁靜倫", "t": "TOP", "n": "陳冠妘", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "呂心彤", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "免沖洗結構護髮素"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "胡詠婷", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "極致養膚身體乳－2入優惠組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "陳心霞", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/29", "sm": 0.1, "p": "買1送1－夏日保養組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "陳思蓓", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "買1送1－日常保養組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "簡翊蓉", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/10", "sm": 2.8, "p": "買9送7－Q1尊享旗艦組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "陳宣亘", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/29", "sm": 2.1, "p": "買1送2－經典養髮組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "林宜文", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/05", "sm": 5.8, "p": "森挪威－福袋"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "李慧敏", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/13", "sm": 3.6, "p": "自然實驗室－Q1輕纖飲"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "李慧娟", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/30", "sm": 4.1, "p": "營養師首選組"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "孫玉緣", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "免沖組合－限定加購"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "陳霈萱", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/11", "sm": 2.7, "p": "隨身瓶－免沖洗結構護髮素 10ML（支）"}, {"u": "歆宸企業社", "t": "THE ONE", "n": "黃曉菁", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/05", "sm": 4.9, "p": "買2送1－柔順光澤組"}, {"u": "林鳳姿", "t": "TOP", "n": "吳卉羚", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "林鳳姿", "t": "TOP", "n": "張靖珮", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/27", "sm": 0.2, "p": "買6送4－口碑旗艦組"}, {"u": "林鳳姿", "t": "TOP", "n": "周芯誼", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/06/05", "sm": 1.9, "p": "Q1輕纖飲－任選3盒優惠組"}, {"u": "林鳳姿", "t": "TOP", "n": "林芷瑄", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買3送1－入門啟動組"}, {"u": "林鳳姿", "t": "TOP", "n": "黃如意", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/06", "sm": 2.9, "p": "買9送7－Q1尊享旗艦組"}, {"u": "林鳳姿", "t": "TOP", "n": "侯佳旻", "g": "C", "gn": "帶線沉睡", "st": "中度沉睡", "ld": "2026/04/15", "sm": 3.6, "p": "買2送2－膠原雙重奏"}, {"u": "林鳳姿", "t": "TOP", "n": "黃琬婷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買6送3－Q1管理首選組"}, {"u": "林鳳姿", "t": "TOP", "n": "曾紀樺", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/12", "sm": 4.7, "p": "自然實驗室－Q1輕纖飲"}, {"u": "林鳳姿", "t": "TOP", "n": "張靜如", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/18", "sm": 4.5, "p": "森挪威－絲漾柔護髮浴"}, {"u": "曾沛語", "t": "TOP", "n": "江至惠", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "曾沛語", "t": "TOP", "n": "廖碧華", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "買1送1－夏日保養組"}, {"u": "曾沛語", "t": "TOP", "n": "楊佳潁", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/31", "sm": 0.1, "p": "買1送1－日常保養組"}, {"u": "曾沛語", "t": "TOP", "n": "游賀香", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/29", "sm": 0.1, "p": "買1送1－日常保養組"}, {"u": "曾沛語", "t": "TOP", "n": "曾琬琳", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "曾沛語", "t": "TOP", "n": "陳淑燕", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/07", "sm": 2.9, "p": "買2送2－膠原雙重奏"}, {"u": "曾沛語", "t": "TOP", "n": "郭玫孜", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/23", "sm": 4.3, "p": "醫師推薦組"}, {"u": "曾沛語", "t": "TOP", "n": "王雅玲", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/11", "sm": 3.7, "p": "森呼吸生醫－強化型金盞花葉黃素EX飲"}, {"u": "李雅錡", "t": "RICH", "n": "傅名芳", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/21", "sm": 0.4, "p": "買1送1－日常保養組"}, {"u": "李雅錡", "t": "RICH", "n": "黃靖涵", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/07", "sm": 2.9, "p": "買9送7－Q1尊享旗艦組"}, {"u": "李雅錡", "t": "RICH", "n": "黃怡綾", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/25", "sm": 3.3, "p": "買2送2－膠原雙重奏"}, {"u": "李雅錡", "t": "RICH", "n": "黃竣琳", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/01/31", "sm": 6.0, "p": "買2送1－美妍計畫組"}, {"u": "李雅錡", "t": "RICH", "n": "蘇瑋婷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/05", "sm": 4.9, "p": "森挪威－CEDAR雪松調沐浴"}, {"u": "李雅錡", "t": "RICH", "n": "劉雅雯", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "精油沐浴組"}, {"u": "顏婕茹", "t": "TOP", "n": "顏芯妤", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/16", "sm": 4.6, "p": "營養師首選組"}, {"u": "顏婕茹", "t": "TOP", "n": "梁馨勻", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/03", "sm": 3.0, "p": "買2送2－膠原雙重奏"}, {"u": "顏婕茹", "t": "TOP", "n": "鍾佳倫", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "森挪威－植萃精油沐浴 (500mL)"}, {"u": "顏婕茹", "t": "TOP", "n": "陳玉琳", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "買1送1－活絡頭皮組"}, {"u": "顏婕茹", "t": "TOP", "n": "黃楚媛", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/30", "sm": 4.1, "p": "隨身瓶－零躁感順髮噴霧20ML（支）"}, {"u": "張靖珮", "t": "TOP", "n": "鄭文琳", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/19", "sm": 2.5, "p": "免沖組合－限定加購"}, {"u": "張靖珮", "t": "TOP", "n": "徐寓甄", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/15", "sm": 4.6, "p": "柔嫩護膚組"}, {"u": "張靖珮", "t": "TOP", "n": "劉芷岑", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "嫩白私密呵護組"}, {"u": "張靖珮", "t": "TOP", "n": "鍾佳妡", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "有勝企業社", "t": "PRINCESSES", "n": "林凱婷", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "有勝企業社", "t": "PRINCESSES", "n": "許如意", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "有勝企業社", "t": "PRINCESSES", "n": "吳翊瑄", "g": "C", "gn": "帶線沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "有勝企業社", "t": "PRINCESSES", "n": "梁怡穎", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "靈芝組合－限定加購"}, {"u": "林永隆", "t": "THE ONE", "n": "王玉琪", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/02", "sm": 1.0, "p": "買10送4－尊享旗艦組"}, {"u": "林永隆", "t": "THE ONE", "n": "蔡宜庭", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "靈芝組合－限定加購"}, {"u": "林永隆", "t": "THE ONE", "n": "董旭涵", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/02/21", "sm": 5.3, "p": "旅行瓶－養膚沐浴系列60ML（罐）"}, {"u": "沐邑企業社", "t": "PRINCESSES", "n": "蔡富容", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/25", "sm": 2.3, "p": "買2送1－口碑回購組"}, {"u": "沐邑企業社", "t": "PRINCESSES", "n": "留瑜讌", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/18", "sm": 4.5, "p": "營養師首選組"}, {"u": "沐邑企業社", "t": "PRINCESSES", "n": "李宣瑩", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "買2送1－柔順光澤組"}, {"u": "游荃棻", "t": "RICH", "n": "鍾嘉蓉", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/26", "sm": 3.2, "p": "買2送2－亮妍雙重奏"}, {"u": "游荃棻", "t": "RICH", "n": "莊佳蓉", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "游荃棻", "t": "RICH", "n": "余茗萱", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/08", "sm": 4.8, "p": "營養師首選組"}, {"u": "呂心彤", "t": "THE ONE", "n": "徐向誼", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/24", "sm": 0.3, "p": "SV超水光珍珠亮妍粉－3入優惠組"}, {"u": "呂心彤", "t": "THE ONE", "n": "林慧榮", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/16", "sm": 3.5, "p": "買2送2－膠原雙重奏"}, {"u": "呂心彤", "t": "THE ONE", "n": "陳蕙玟", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/23", "sm": 2.3, "p": "買1送1－活絡頭皮組"}, {"u": "張雅雯", "t": "TOP", "n": "張安云", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "買1送1－首選推薦組"}, {"u": "張雅雯", "t": "TOP", "n": "黃宇晨", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "森挪威－品牌提袋"}, {"u": "張雅雯", "t": "TOP", "n": "陳欣意", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/06", "sm": 4.9, "p": "口碑回購組"}, {"u": "張芷瑄", "t": "PRINCESSES", "n": "黃海錦", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/25", "sm": 3.3, "p": "買6送3－Q1管理首選組"}, {"u": "張芷瑄", "t": "PRINCESSES", "n": "莊晴涵", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/10", "sm": 3.7, "p": "買2送2－膠原雙重奏"}, {"u": "張芷瑄", "t": "PRINCESSES", "n": "黃薇庭", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/03", "sm": 5.0, "p": "潔淨呵護組"}, {"u": "吳卉羚", "t": "TOP", "n": "林淇雯", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買6送3－Q1管理首選組"}, {"u": "吳卉羚", "t": "TOP", "n": "張淑樺", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "買2送1－口碑回購組"}, {"u": "吳卉羚", "t": "TOP", "n": "張智亦", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/10", "sm": 4.8, "p": "營養師首選組"}, {"u": "王芷淇", "t": "PRINCESSES", "n": "鍾宜君", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "王芷淇", "t": "PRINCESSES", "n": "林沛瑩", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買2送1－口碑回購組"}, {"u": "王芷淇", "t": "PRINCESSES", "n": "鍾宜婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "深層修護組"}, {"u": "葉芳竹", "t": "TOP", "n": "蔣貝秀", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/11", "sm": 4.7, "p": "營養師首選組"}, {"u": "葉芳竹", "t": "TOP", "n": "葉芳茜", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/20", "sm": 4.4, "p": "買2送1－柔順光澤組"}, {"u": "葉芳竹", "t": "TOP", "n": "林玟潔", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "林芷瑄", "t": "TOP", "n": "黃苡菱", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "林芷瑄", "t": "TOP", "n": "潘子薰", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/25", "sm": 2.3, "p": "買2送1－口碑回購組"}, {"u": "盧乃禎", "t": "PRINCESSES", "n": "鍾岦蒖", "g": "A", "gn": "重複押檔核心", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "盧乃禎", "t": "PRINCESSES", "n": "葉懿萱", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買3送1－入門啟動組"}, {"u": "涂雅惠", "t": "TOP", "n": "黃郁芸", "g": "B", "gn": "單次押檔", "st": "輕度沉睡", "ld": "2026/05/25", "sm": 2.3, "p": "嫩白私密呵護組"}, {"u": "涂雅惠", "t": "TOP", "n": "周宥芷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "柔嫩護膚組"}, {"u": "林湘芸", "t": "PRINCESSES", "n": "余佳瑜", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "買1送1－髮根強化組"}, {"u": "林湘芸", "t": "PRINCESSES", "n": "張毓亞", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/05", "sm": 1.9, "p": "Q1輕纖飲－任選2盒優惠組"}, {"u": "林巧淳", "t": "THE ONE", "n": "劉念慈", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/13", "sm": 3.6, "p": "買2送2－膠原雙重奏"}, {"u": "林巧淳", "t": "THE ONE", "n": "林秀暖", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/20", "sm": 4.4, "p": "潔淨呵護組"}, {"u": "彭子宸", "t": "RICH", "n": "施畇云", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/21", "sm": 0.4, "p": "19+超級鳳梨消化酵素－3入優惠組"}, {"u": "彭子宸", "t": "RICH", "n": "蔡羽婷", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/15", "sm": 4.6, "p": "營養師首選組"}, {"u": "黃念慈", "t": "PRINCESSES", "n": "周美榛", "g": "B", "gn": "單次押檔", "st": "中度沉睡", "ld": "2026/04/24", "sm": 3.3, "p": "買9送7－Q1尊享旗艦組"}, {"u": "黃念慈", "t": "PRINCESSES", "n": "黃雨舲", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/04", "sm": 5.0, "p": "營養師首選組"}, {"u": "朱珮菱", "t": "PRINCESSES", "n": "孔薇芯", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/29", "sm": 2.1, "p": "自然實驗室－SC超胜肽燕窩膠原蛋白"}, {"u": "朱珮菱", "t": "PRINCESSES", "n": "張菱庭", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/23", "sm": 2.3, "p": "買1送1－明星養膚組"}, {"u": "孫宥心", "t": "THE ONE", "n": "何芸瑀", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/15", "sm": 1.6, "p": "Q1輕纖飲－任選3盒優惠組"}, {"u": "施畇云", "t": "RICH", "n": "張祐慈", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "營養師首選組"}, {"u": "吳金玲", "t": "PRINCESSES", "n": "蔡仁杰", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/04/18", "sm": 3.5, "p": "森挪威－控油深層髮浴"}, {"u": "傅名芳", "t": "RICH", "n": "王宥文", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－首選推薦組"}, {"u": "吳雅涵", "t": "PRINCESSES", "n": "林郁庭", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/20", "sm": 2.4, "p": "買1送2－經典養髮組"}, {"u": "廖婉羚", "t": "RICH", "n": "郭又綾", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "森挪威－植萃精油沐浴"}, {"u": "曾品綺", "t": "TOP", "n": "陳亞薇", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/05/01", "sm": 3.1, "p": "昆凌私享 4週有效養髮 - 莘生靈芝養髮浴"}, {"u": "洪依晨", "t": "THE ONE", "n": "陳筑筠", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/07", "sm": 1.8, "p": "Q1輕纖飲－任選3盒優惠組"}, {"u": "江婕菱", "t": "TOP", "n": "顏家淳", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/12", "sm": 2.7, "p": "買1送1－私密呵護組"}, {"u": "林士弘", "t": "THE ONE", "n": "林語璇", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/13", "sm": 1.6, "p": "自然實驗室－SV超水光珍珠亮妍粉"}, {"u": "林小萍", "t": "PRINCESSES", "n": "蔡佳樺", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/31", "sm": 2.1, "p": "森呼吸生醫－強化型金盞花葉黃素EX飲"}, {"u": "江至惠", "t": "TOP", "n": "黃郁甄", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "王玉琪", "t": "THE ONE", "n": "薛嘉婷", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/12", "sm": 2.7, "p": "森挪威－CEDAR雪松調沐浴"}, {"u": "王渝婷", "t": "THE ONE", "n": "王寶貞", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/18", "sm": 2.5, "p": "買1送1－髮根強化組"}, {"u": "胡詠婷", "t": "THE ONE", "n": "柳念萍", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "森挪威－爵士男性沐浴"}, {"u": "籃芷渝", "t": "PRINCESSES", "n": "林晉毅", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/09", "sm": 4.8, "p": "買2送1－柔順光澤組"}, {"u": "白繡華", "t": "PRINCESSES", "n": "陳懿晏", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/22", "sm": 2.4, "p": "買1送2－經典養髮組"}, {"u": "許祕淑", "t": "THE ONE", "n": "林聖賢", "g": "D", "gn": "輕中度沉睡", "st": "中度沉睡", "ld": "2026/03/31", "sm": 4.1, "p": "潔淨呵護組"}, {"u": "鍾宜君", "t": "PRINCESSES", "n": "李佳容", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/21", "sm": 2.4, "p": "隨身瓶－免沖洗結構護髮素 10ML（支）"}, {"u": "鄭雅萍", "t": "TOP", "n": "林季嫻", "g": "B", "gn": "單次押檔", "st": "活躍", "ld": "2026/07/01", "sm": 1.1, "p": "買10送4－尊享旗艦組"}, {"u": "陳思蓓", "t": "THE ONE", "n": "張淑津", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/06/10", "sm": 1.7, "p": "Q1輕纖飲－任選3盒優惠組"}, {"u": "顏瑞緹", "t": "RICH", "n": "趙又葶", "g": "D", "gn": "輕中度沉睡", "st": "輕度沉睡", "ld": "2026/05/30", "sm": 2.1, "p": "森挪威－爵士男性沐浴"}], "teams": {"TOP": {"list": 197, "cover": 137, "up": 16, "A": 18}, "THE ONE": {"list": 64, "cover": 58, "up": 13, "A": 17}, "PRINCESSES": {"list": 115, "cover": 75, "up": 15, "A": 14}, "RICH": {"list": 66, "cover": 47, "up": 8, "A": 4}}};
+const BLOCKS = [
+  {k:'ok',   t:'順利',            d:'已接觸，沒有障礙'},
+  {k:'time', t:'沒時間接觸',       d:'我這邊還沒動 — 卡在我'},
+  {k:'noreply',t:'接觸了但沒回應',  d:'訊息已送出，對方沒反應'},
+  {k:'offer',t:'有回應但方案不夠',  d:'對方有興趣，但目前組合打不動'},
+  {k:'money',t:'要下單但儲值卡住',  d:'意願確定，卡在額度或撥款'},
+  {k:'other',t:'其他',            d:'請簡述'}
+];
+const BMAP = Object.fromEntries(BLOCKS.map(b=>[b.k,b.t]));
+const OWNER = {time:'團隊長',noreply:'你 — 給對的一句話',offer:'行銷部 — 組合規格',
+               money:'董事層 — 儲值額度',other:'個案'};
+const TEAMS = ['TOP','THE ONE','PRINCESSES','RICH'];
+const API='https://script.google.com/macros/s/AKfycbzYMxYvaWTeHt_o94JDay5oDNveuk6c8VKKqdKP5gSJKyn0BhXavcMWr4rCpKG37SgGpQ/exec';
+const TOKENS={"xub4n": {"type": "upline", "name": "必聖企業社", "t": "TOP"}, "4ywea": {"type": "upline", "name": "尤安娜企業社", "t": "PRINCESSES"}, "h28sg": {"type": "upline", "name": "子茗企業社", "t": "RICH"}, "wbr5e": {"type": "upline", "name": "慕妍生技企業社", "t": "THE ONE"}, "843v6": {"type": "upline", "name": "曾郁珊", "t": "TOP"}, "c58sn": {"type": "upline", "name": "梁靜倫", "t": "TOP"}, "by7q2": {"type": "upline", "name": "歆宸企業社", "t": "THE ONE"}, "rp2xk": {"type": "upline", "name": "林鳳姿", "t": "TOP"}, "e7qvx": {"type": "upline", "name": "曾沛語", "t": "TOP"}, "zdddh": {"type": "upline", "name": "李雅錡", "t": "RICH"}, "5u7xr": {"type": "upline", "name": "顏婕茹", "t": "TOP"}, "ahjyr": {"type": "upline", "name": "張靖珮", "t": "TOP"}, "7mnfr": {"type": "upline", "name": "有勝企業社", "t": "PRINCESSES"}, "q9new": {"type": "upline", "name": "林永隆", "t": "THE ONE"}, "c8ejm": {"type": "upline", "name": "沐邑企業社", "t": "PRINCESSES"}, "ydnb5": {"type": "upline", "name": "游荃棻", "t": "RICH"}, "yvvjk": {"type": "upline", "name": "呂心彤", "t": "THE ONE"}, "6znj4": {"type": "upline", "name": "張雅雯", "t": "TOP"}, "r3f2h": {"type": "upline", "name": "張芷瑄", "t": "PRINCESSES"}, "564ve": {"type": "upline", "name": "吳卉羚", "t": "TOP"}, "5wwng": {"type": "upline", "name": "王芷淇", "t": "PRINCESSES"}, "ze8bh": {"type": "upline", "name": "葉芳竹", "t": "TOP"}, "pxwvx": {"type": "upline", "name": "林芷瑄", "t": "TOP"}, "wc9ex": {"type": "upline", "name": "盧乃禎", "t": "PRINCESSES"}, "ecu9r": {"type": "upline", "name": "涂雅惠", "t": "TOP"}, "3yzgp": {"type": "upline", "name": "林湘芸", "t": "PRINCESSES"}, "rs5xq": {"type": "upline", "name": "林巧淳", "t": "THE ONE"}, "n5jsf": {"type": "upline", "name": "彭子宸", "t": "RICH"}, "43zv7": {"type": "upline", "name": "黃念慈", "t": "PRINCESSES"}, "zadpa": {"type": "upline", "name": "朱珮菱", "t": "PRINCESSES"}, "xd4yb": {"type": "upline", "name": "孫宥心", "t": "THE ONE"}, "jgfxs": {"type": "upline", "name": "施畇云", "t": "RICH"}, "tu9zt": {"type": "upline", "name": "吳金玲", "t": "PRINCESSES"}, "4zeu2": {"type": "upline", "name": "傅名芳", "t": "RICH"}, "m7xpj": {"type": "upline", "name": "吳雅涵", "t": "PRINCESSES"}, "3m89d": {"type": "upline", "name": "廖婉羚", "t": "RICH"}, "xmqdb": {"type": "upline", "name": "曾品綺", "t": "TOP"}, "f9utw": {"type": "upline", "name": "洪依晨", "t": "THE ONE"}, "hndky": {"type": "upline", "name": "江婕菱", "t": "TOP"}, "w5f85": {"type": "upline", "name": "林士弘", "t": "THE ONE"}, "kvn4v": {"type": "upline", "name": "林小萍", "t": "PRINCESSES"}, "unm6x": {"type": "upline", "name": "江至惠", "t": "TOP"}, "wk6kn": {"type": "upline", "name": "王玉琪", "t": "THE ONE"}, "5nm28": {"type": "upline", "name": "王渝婷", "t": "THE ONE"}, "9yzsq": {"type": "upline", "name": "胡詠婷", "t": "THE ONE"}, "m7d6k": {"type": "upline", "name": "籃芷渝", "t": "PRINCESSES"}, "azqcm": {"type": "upline", "name": "白繡華", "t": "PRINCESSES"}, "cpknj": {"type": "upline", "name": "許祕淑", "t": "THE ONE"}, "5nmtn": {"type": "upline", "name": "鍾宜君", "t": "PRINCESSES"}, "ghhcu": {"type": "upline", "name": "鄭雅萍", "t": "TOP"}, "chbwm": {"type": "upline", "name": "陳思蓓", "t": "THE ONE"}, "sgqjj": {"type": "upline", "name": "顏瑞緹", "t": "RICH"}, "g97hw": {"type": "leader", "team": "TOP"}, "q6ruc": {"type": "leader", "team": "THE ONE"}, "jbugf": {"type": "leader", "team": "PRINCESSES"}, "r9ar2": {"type": "leader", "team": "RICH"}, "dg58c": {"type": "dept"}};
+const SEEN='morebeaut-wake-seen-v2';
+
+let logs={}; let online=false; let batch=15;
+let role=null;              // {type:'upline',name} | {type:'leader',team} | {type:'dept'}
+let filter='todo', tab='rank', dfilter='all';
+let editing=null, draft={}, showAll=false;
+let seen={}, showIntro=false;
+
+/* ---------- 資料存取：Google 試算表 ---------- */
+async function load(){
+  try{
+    const r=await fetch(API+'?t='+Date.now(),{method:'GET'});
+    const j=await r.json();
+    if(j&&j.ok){ logs=j.logs||{}; online=true; }
+  }catch(e){ online=false; }
+  try{const r=await window.storage.get(SEEN,true); if(r&&r.value) seen=JSON.parse(r.value);}catch(e){}
+}
+async function saveSeen(){ try{await window.storage.set(SEEN,JSON.stringify(seen),true);}catch(e){} }
+async function push(m,rec){
+  const body={key:m.u+'|'+m.n,team:m.t,upline:m.u,member:m.n,group:m.g+'｜'+m.gn,
+    d:rec.d,reply:rec.reply,amt:rec.amt,block:rec.block,
+    blockLabel:BMAP[rec.block]||'',note:rec.note,ts:rec.ts};
+  const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});
+  const j=await r.json();
+  if(!j||!j.ok) throw new Error('write failed');
+}
+const $=s=>document.querySelector(s);
+let tt; function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1900);}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- 週次：由接觸日推算，不需另存快照 ---------- */
+function wk(d){
+  const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dn=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-dn);
+  const y=t.getUTCFullYear();
+  return y+'-W'+String(Math.ceil(((t-Date.UTC(y,0,1))/86400000+1)/7)).padStart(2,'0');
+}
+const curWk=()=>wk(new Date());
+function prevWk(){const d=new Date();d.setDate(d.getDate()-7);return wk(d);}
+function wkOf(l){ if(!l||!l.d) return ''; const p=String(l.d).split('-');
+  return p.length<3?'':wk(new Date(+p[0],+p[1]-1,+p[2])); }
+function statWk(ms,key){
+  const ls=ms.map(logOf).filter(l=>l&&wkOf(l)===key);
+  return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0)};
+}
+/* ---------- helpers ---------- */
+const logOf=m=>logs[m.u+'|'+m.n];
+const mine=()=>DATA.members.filter(m=>m.u===role.name);
+const teamOf=t=>DATA.members.filter(m=>m.t===t);
+function stateOf(m){
+  const l=logOf(m); if(!l) return 'todo';
+  if(l.amt>0) return 'intent';
+  if(l.block&&l.block!=='ok'&&l.block!=='noreply') return 'blocked';
+  if(l.reply) return 'replied';
+  return 'contacted';
+}
+const STATE={todo:['未接觸',''],contacted:['已接觸',''],replied:['有回應','ok'],
+             intent:['有意向','gold'],blocked:['有卡點','stop']};
+function hookOf(m){
+  if(m.g==='A') return ['檔期主力','確認這一檔的規格與金額，不用重新說明品牌。'];
+  if(m.g==='B') return ['手上可能還有貨','<b>不是要他再進貨</b>，是公關品幫他把上次那批賣動。'];
+  if(m.g==='C') return ['有下線','先讓他本人動起來，他底下的人才會跟著動。'];
+  if(m.p) return ['指名回購',`「你上次買的<b>${esc(m.p)}</b>，這個月回購有優惠，要幫你留嗎？」`];
+  return ['指名回購','用他上次買的品項開場，不要談品牌方向。'];
+}
+function stat(ms){
+  const ls=ms.map(logOf).filter(Boolean);
+  return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0)};
+}
+const wan=v=>v?(v/10000).toFixed(1):'0';
+function delta(now,was){
+  if(was==null) return '';
+  const d=now-was;
+  if(d===0) return `<s>持平</s>`;
+  return `<s class="${d>0?'up':'dn'}">${d>0?'↑':'↓'}${Math.abs(d)}</s>`;
+}
+
+/* ---------- render ---------- */
+function render(){ if(!role) return renderLogin();
+  if(role.type==='upline'){
+    if(showIntro||!seen[role.name]) return renderIntro();
+    return renderUpline();
+  }
+  if(role.type==='leader') return renderLeader();
+  renderDept(); }
+
+function renderLogin(){
+  const ups=showAll?DATA.uplines:DATA.uplines.slice(0,8);
+  $('#app').innerHTML=`
+  <div class="wrap login">
+    <h1>茉本喚醒追蹤</h1>
+    <p>選擇你的身分。上線每接觸一位就記一筆，不用等到週末。</p>
+    <div class="sect2">上線</div>
+    <div class="ug">${ups.map(u=>`<button class="ub" data-u="${esc(u.n)}">
+      <div><b>${esc(u.n)}</b><s>${u.t}　${esc(u.lv)}</s></div>
+      <em>${u.c}<span>人</span></em></button>`).join('')}</div>
+    ${showAll?'':`<button class="more" id="more">顯示其餘 ${DATA.uplines.length-8} 位上線</button>`}
+    <div class="sect2">團隊長</div>
+    <div class="ug">${TEAMS.map(t=>`<button class="ub" data-t="${t}">
+      <div><b>${t} TEAM</b><s>名單 ${DATA.teams[t].list} 人　可覆蓋 ${DATA.teams[t].cover} 人</s></div>
+      <em>${DATA.teams[t].up}<span>上線</span></em></button>`).join('')}</div>
+    <div class="sect2">經銷部</div>
+    <button class="ub" id="dept" style="width:100%">
+      <div><b>經銷部彙總</b><s>四隊並排　·　卡點　·　全部明細</s></div></button>
+  </div>`;
+  document.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{role={type:'upline',name:b.dataset.u};filter='todo';showIntro=false;go()});
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{role={type:'leader',team:b.dataset.t};tab='self';dfilter='all';go()});
+  const mb=$('#more'); if(mb) mb.onclick=()=>{showAll=true;render()};
+  $('#dept').onclick=()=>{role={type:'dept'};tab='rank';dfilter='all';go()};
+}
+function go(){ render(); window.scrollTo(0,0); }
+
+function bar(title,sub){
+  return `<header><div class="wrap"><div class="hrow">
+    <div class="brand">${title}</div>
+    <button class="who" id="sw">${sub}<b>切換 ›</b></button>
+  </div></div><div class="rule"></div></header>`;
+}
+function bindSw(){ const b=$('#sw'); if(!b) return;
+  if(new URLSearchParams(location.search).get('u')){ b.querySelector('b').textContent='';
+    b.style.pointerEvents='none'; return; }
+  b.onclick=()=>{role=null;showAll=false;go()}; }
+
+
+/* ===== 首次開啟說明 ===== */
+function renderIntro(){
+  const first=!seen[role.name];
+  $('#app').innerHTML=`
+  <div class="wrap intro">
+    <div class="ilead">公司把每一位曾經一起走過的夥伴，<br>都重新看過一遍。</div>
+    <div class="isub">這一步，我們希望帶著他們一起走。</div>
+    <div class="irule"></div>
+    <div class="ifine">我看得到大家的紀錄，是為了知道卡在哪裡。<br>卡點照實填，我會處理。</div>
+    <button class="save" id="gono" style="margin-top:30px">${first?'開始':'回到名單'}</button>
+    ${first?'':`<button class="skip" id="bk">返回</button>`}
+  </div>`;
+  $('#gono').onclick=async()=>{
+    if(first){ seen[role.name]=Date.now(); await saveSeen(); }
+    showIntro=false; go();
+  };
+  const bk=$('#bk'); if(bk) bk.onclick=()=>{showIntro=false;go();};
+}
+
+/* ===== 上線端 ===== */
+function renderUpline(){
+  const ms=mine(), s=stat(ms);
+  const counts={all:ms.length,todo:ms.filter(m=>stateOf(m)==='todo').length,
+    A:ms.filter(m=>m.g==='A').length,B:ms.filter(m=>m.g==='B').length,
+    D:ms.filter(m=>['C','D','E'].includes(m.g)).length};
+  const F=[['todo','未接觸 '+counts.todo],['all','全部 '+counts.all],
+           ['A','A 檔期主力 '+counts.A],['B','B 有庫存 '+counts.B],['D','沉睡 '+counts.D]];
+  let show=ms.filter(m=>filter==='all'?true:filter==='todo'?stateOf(m)==='todo'
+           :filter==='D'?['C','D','E'].includes(m.g):m.g===filter);
+  let hidden=0;
+  if(filter==='todo'&&show.length>batch){ hidden=show.length-batch; show=show.slice(0,batch); }
+  $('#app').innerHTML=bar('茉本喚醒追蹤',esc(role.name))+`
+  <div class="wrap">
+    <div class="prog"><div class="pnums">
+      <div class="pn"><i>${s.con}</i><s>已接觸 / ${ms.length}</s></div>
+      <div class="pn"><i>${s.rep}</i><s>有回應</s></div>
+      <div class="pn"><i>${wan(s.amt)}</i><s>意向萬元</s></div>
+    </div><div class="bar"><div style="width:${ms.length?s.con/ms.length*100:0}%"></div></div></div>
+    <div class="filters">${F.map(([k,t])=>`<button class="fc" data-f="${k}" aria-pressed="${filter===k}">${t}</button>`).join('')}</div>
+    <div class="list">${show.length?show.map(card).join('')
+      :`<div class="empty">這一組都記過了。<br>切到「全部」可以修改先前的紀錄。</div>`}
+      ${hidden?`<div class="batchnote">先跑這 ${batch} 位。記完之後，下一批 ${hidden} 位會自動出現。<br>
+        一次面對太多人反而會停在第五個。</div>`:''}
+      <button class="reread" id="rr">再看一次這份名單的說明</button></div>
+  </div>`;
+  bindSw();
+  $('#rr').onclick=()=>{showIntro=true;go();};
+  document.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
+  document.querySelectorAll('.mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+}
+function card(m){
+  const st=stateOf(m),[lbl,cls]=STATE[st],l=logOf(m),[tag,line]=hookOf(m);
+  const cc=st==='intent'?'intent':st==='blocked'?'blocked':(st!=='todo'?'done':'');
+  return `<button class="mc ${cc}" data-n="${esc(m.n)}">
+    <div class="mrow"><span class="mname">${esc(m.n)}</span>
+      <span class="tag ${m.g}">${m.g}</span>
+      <span class="mstate ${cls}">${lbl}${l&&l.amt?'　'+wan(l.amt)+'萬':''}</span></div>
+    <div class="mmeta">最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}</div>
+    ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
+      :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
+  </button>`;
+}
+
+/* ===== 團隊長端 ===== */
+function renderLeader(){
+  const T=role.team, info=DATA.teams[T], ms=teamOf(T), s=stat(ms);
+  const tw=statWk(ms,curWk()), lw=statWk(ms,prevWk());
+  const pct=info.cover?s.con/info.cover*100:0;
+  const TAB=[['self','本週進度'],['detail','明細'],['block','卡點']];
+  $('#app').innerHTML=bar(T+' TEAM',esc(T)+' 團隊長')+`
+  <div class="wrap">
+    <div class="prog"><div class="pnums">
+      <div class="pn"><i>${tw.con}</i><s>本週接觸 ${delta(tw.con,lw.con)}</s></div>
+      <div class="pn"><i>${tw.rep}</i><s>本週回應 ${delta(tw.rep,lw.rep)}</s></div>
+      <div class="pn"><i>${wan(tw.amt)}</i><s>本週意向萬</s></div>
+    </div><div class="bar"><div style="width:${pct}%"></div></div>
+    <div class="denom">累計已接觸 ${s.con} / 可覆蓋 ${info.cover} 人　·　名單共 ${info.list} 人　·　${curWk()}</div></div>
+    <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
+    ${tab==='self'?selfBlock(T,s,tw,lw,info)
+     :tab==='detail'?detailBlock(ms,'leader')
+     :blockBlock(ms)}
+  </div>`;
+  bindSw();
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+  bindDetail();
+}
+function selfBlock(T,s,tw,lw,info){
+  const ms=teamOf(T);
+  const byUp=DATA.uplines.filter(u=>u.t===T).map(u=>{
+    const um=ms.filter(m=>m.u===u.n); return {u,...stat(um),total:um.length};
+  }).sort((a,b)=>(a.con/a.total)-(b.con/b.total));
+  return `
+  <table class="tt"><thead><tr><th></th><th>上週</th><th>本週</th></tr></thead><tbody>
+    <tr><td>接觸</td><td>${lw.con||'—'}</td><td class="g">${tw.con}</td></tr>
+    <tr><td>有回應</td><td>${lw.rep||'—'}</td><td class="g">${tw.rep}</td></tr>
+    <tr><td>意向（萬）</td><td>${lw.amt?wan(lw.amt):'—'}</td><td class="g">${wan(tw.amt)}</td></tr>
+  </tbody></table>
+  <div class="sect">你隊上線的進度　·　由低到高</div>
+  ${byUp.map(x=>`<div class="bl"><i>${x.con}/${x.total}</i><span>${esc(x.u.n)}</span>
+    <s>${x.amt?wan(x.amt)+'萬':'—'}</s></div>`).join('')}
+  <p class="note">比較對象是自己的上週，不是別隊。四隊名單規模與活躍上線數差異很大，橫向比不具意義。<br>
+  分母用「可覆蓋人數」，因為沉睡上線那幾條線不在你這一層處理。</p>`;
+}
+
+/* ===== 經銷部端 ===== */
+function renderDept(){
+  const all=DATA.members, s=stat(all);
+  const rows=TEAMS.map(t=>{
+    const ms2=teamOf(t);
+    return {t,info:DATA.teams[t],...stat(ms2),tw:statWk(ms2,curWk())};
+  });
+  const TAB=[['rank','四隊進度'],['block','卡點'],['detail','明細'],['silent','未動的上線']];
+  const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
+  $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
+  <div class="wrap">
+    <div class="prog"><div class="pnums">
+      <div class="pn"><i>${s.con}</i><s>已接觸 / 317</s></div>
+      <div class="pn"><i>${s.rep}</i><s>有回應</s></div>
+      <div class="pn"><i>${wan(s.amt)}</i><s>意向萬元</s></div>
+    </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
+    <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div></div>
+    <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
+    ${tab==='rank'?`
+      <table class="tt"><thead><tr><th>團隊</th><th>累計／可覆蓋</th><th>本週</th><th>意向（萬）</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr class="${r.con?'':'blank'}"><td>${r.t}</td>
+        <td>${r.con} / ${r.info.cover}</td><td>${r.tw.con||'—'}</td>
+        <td class="g">${r.amt?wan(r.amt):'—'}</td></tr>`).join('')}
+      </tbody></table>
+      <div class="sect">結構差異　·　解讀基準</div>
+      <table class="tt"><thead><tr><th>團隊</th><th>名單</th><th>活躍上線</th><th>每位負荷</th><th>A組</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${r.t}</td><td>${r.info.list}</td><td>${r.info.up}</td>
+        <td>${(r.info.cover/r.info.up).toFixed(1)}</td><td class="g">${r.info.A}</td></tr>`).join('')}
+      </tbody></table>
+      <p class="note">TOP 名單是 THE ONE 的三倍、每位上線扛 8.6 人；RICH 只有 4 位 A 組。<br>
+      四隊不可橫向比較 — 團隊長端只看得到自己隊與自己的上週。<br>
+      這張表就是每週主管一頁式的數字來源。</p>`
+     :tab==='block'?blockBlock(all)
+     :tab==='detail'?detailBlock(all,'dept')
+     :`<div class="sect">本期尚無任何紀錄的上線</div>
+       ${silent.length?silent.map(u=>`<div class="bl"><i>${u.c}</i><span>${esc(u.n)}</span><s>${u.t}</s></div>`).join('')
+         :`<div class="empty">52 位上線都已有紀錄。</div>`}
+       <p class="note">每週只找一隊。挑回應率最低或未動人數最多的那一隊主動問一次，四週輪完。</p>`}
+  </div>`;
+  bindSw();
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+  bindDetail();
+}
+
+/* ===== 卡點 ===== */
+function blockBlock(ms){
+  const bl={};
+  ms.forEach(m=>{const l=logOf(m); if(l&&l.block&&l.block!=='ok') bl[l.block]=(bl[l.block]||0)+1;});
+  const list=Object.entries(bl).sort((a,b)=>b[1]-a[1]);
+  return `<div class="sect">卡點分布　·　誰能解</div>
+    ${list.length?list.map(([k,v])=>`<div class="bl"><i>${v}</i><span>${esc(BMAP[k])}</span>
+      <s>${OWNER[k]||''}</s></div>`).join(''):`<div class="empty">還沒有卡點紀錄。</div>`}
+    <p class="note">同樣是落後，四種卡點的處置完全不同。<br>
+    「接觸了但沒回應」是話術問題；「方案不夠」與「儲值卡住」要往上報，這一層出手沒有用。</p>`;
+}
+
+/* ===== 明細 ===== */
+function detailBlock(ms,who){
+  const rec=ms.filter(m=>logOf(m));
+  const D=[['all','全部 '+rec.length],['intent','有意向'],['block','有卡點'],['noreply','無回應']];
+  let show=rec.filter(m=>{const l=logOf(m);
+    return dfilter==='all'?true:dfilter==='intent'?l.amt>0
+      :dfilter==='block'?(l.block&&l.block!=='ok'):!l.reply;});
+  show.sort((a,b)=>(logOf(b).amt||0)-(logOf(a).amt||0)||logOf(b).ts-logOf(a).ts);
+  return `
+  <div class="filters">${D.map(([k,t])=>`<button class="fc" data-d="${k}" aria-pressed="${dfilter===k}">${t}</button>`).join('')}</div>
+  ${show.length?show.map(m=>{const l=logOf(m);
+    return `<div class="dc">
+      <div class="mrow"><span class="mname">${esc(m.n)}</span>
+        <span class="tag ${m.g}">${m.g}</span>
+        <span class="mstate ${l.amt?'gold':(l.reply?'ok':'')}">${l.amt?wan(l.amt)+'萬':(l.reply?'有回應':'無回應')}</span></div>
+      <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${l.d}${who==='dept'?'　·　'+m.t:''}</div>
+      ${l.block&&l.block!=='ok'?`<div class="hook"><b>${esc(BMAP[l.block])}</b>${l.note?'　'+esc(l.note):''}</div>`:''}
+    </div>`}).join(''):`<div class="empty">尚無紀錄。</div>`}
+  ${rec.length?`<button class="more" id="exp">複製成表格（貼進 Excel）</button>`:''}
+  <p class="note">明細僅供備查。<b>不要在群組引用單筆內容</b> — 一旦上線看到自己填的話被公開，下一週就沒人認真填了。<br>
+  需要處理個案時私下問「這批你這邊狀況怎麼樣」，不要說「我看到你寫」。</p>`;
+}
+function bindDetail(){
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dfilter=b.dataset.d;render()});
+  const e=$('#exp'); if(e) e.onclick=doExport;
+}
+function doExport(){
+  const ms=(role.type==='leader'?teamOf(role.team):DATA.members).filter(m=>logOf(m));
+  const rows=[['團隊','上線','下線','分組','接觸日','有回應','意向金額','卡點','補充']];
+  ms.forEach(m=>{const l=logOf(m);
+    rows.push([m.t,m.u,m.n,m.g+'｜'+m.gn,l.d,l.reply?'有':'無',l.amt||0,BMAP[l.block]||'',l.note||'']);});
+  const tsv=rows.map(r=>r.join('\t')).join('\n');
+  navigator.clipboard.writeText(tsv).then(()=>toast('已複製 '+ms.length+' 筆'),()=>toast('複製失敗'));
+}
+
+/* ===== 記錄表單 ===== */
+function openSheet(name){
+  editing=mine().find(m=>m.n===name);
+  const l=logOf(editing);
+  draft=l?{...l}:{d:today(),reply:null,amt:'',block:null,note:''};
+  drawSheet(); $('#scrim').classList.add('on'); $('#sheet').classList.add('on');
+}
+function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.remove('on');editing=null;}
+function today(){const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function drawSheet(){
+  const m=editing; if(!m) return;
+  const ready=draft.block!==null&&draft.reply!==null;
+  $('#sheet').innerHTML=`
+    <div class="grab"></div>
+    <div class="sh"><h3>${esc(m.n)}</h3>
+      <p>${m.gn}　·　最後買 ${esc(m.p||'無紀錄')}</p></div>
+    <div class="sb">
+      <div class="fld"><label class="lb" for="dt">接觸日期</label>
+        <input type="date" id="dt" value="${draft.d}"></div>
+      <div class="fld"><span class="lb">對方有回應嗎</span><div class="seg">
+        <button data-r="0" aria-pressed="${draft.reply===false}">沒有回應</button>
+        <button data-r="1" aria-pressed="${draft.reply===true}">有回應</button></div></div>
+      <div class="fld"><label class="lb" for="am">意向金額（沒有就留空）</label>
+        <input type="number" id="am" inputmode="numeric" placeholder="0" value="${draft.amt||''}"></div>
+      <div class="fld"><span class="lb">卡點　·　必選</span><div class="blocks">${BLOCKS.map(b=>`
+        <button data-b="${b.k}" aria-pressed="${draft.block===b.k}">
+          <span class="dot"></span><span>${b.t}<em>${b.d}</em></span></button>`).join('')}</div></div>
+      ${draft.block==='other'||draft.note?`<div class="fld"><label class="lb" for="nt">補充</label>
+        <input id="nt" value="${esc(draft.note||'')}" placeholder="一句話就好"></div>`:''}
+      <button class="save" id="sv" ${ready?'':'disabled'}>${ready?'記錄':'請選擇回應與卡點'}</button>
+      <button class="skip" id="cl">取消</button>
+    </div>`;
+  $('#dt').onchange=e=>draft.d=e.target.value;
+  $('#am').oninput=e=>draft.amt=e.target.value;
+  const nt=$('#nt'); if(nt) nt.oninput=e=>draft.note=e.target.value;
+  document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{draft.reply=b.dataset.r==='1';keep();drawSheet();});
+  document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{
+    draft.block=b.dataset.b;
+    if(draft.block==='noreply'&&draft.reply===null) draft.reply=false;
+    if(draft.block==='ok'&&draft.reply===null) draft.reply=true;
+    keep();drawSheet();});
+  $('#cl').onclick=closeSheet;
+  $('#sv').onclick=async()=>{keep();
+    const btn=$('#sv'); btn.disabled=true; btn.textContent='儲存中…';
+    const rec={d:draft.d,reply:draft.reply,amt:Number(draft.amt)||0,
+      block:draft.block,note:draft.note||'',ts:Date.now()};
+    try{ await push(m,rec); logs[m.u+'|'+m.n]=rec; closeSheet(); render(); toast('已記錄 '+m.n); }
+    catch(err){ btn.disabled=false; btn.textContent='重試'; toast('沒有存到，請確認網路後重試'); }};
+  function keep(){const a=$('#am'),n=$('#nt'),d=$('#dt');
+    if(a)draft.amt=a.value; if(n)draft.note=n.value; if(d)draft.d=d.value;}
+}
+
+$('#scrim').onclick=closeSheet;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+function boot(){
+  const q=new URLSearchParams(location.search).get('u');
+  if(q&&TOKENS[q]){
+    const v=TOKENS[q];
+    role = v.type==='upline'?{type:'upline',name:v.name}
+         : v.type==='leader'?{type:'leader',team:v.team}:{type:'dept'};
+    if(role.type==='leader'){tab='self';} if(role.type==='dept'){tab='rank';}
+  }
+  if(!online) setTimeout(()=>toast('連不上資料庫，紀錄不會保存'),600);
+  render();
+}
+load().then(boot);
+</script>
+
