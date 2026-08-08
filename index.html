@@ -118,8 +118,10 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .save:disabled{background:var(--line);color:var(--mute)}
 .skip{width:100%;padding:12px;font-size:13px;color:var(--mute);margin-top:6px}
 
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:4px}
-.tabs button{flex:1;padding:13px 0;font-size:13.5px;color:var(--mute);border-bottom:2px solid transparent;letter-spacing:.05em}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:4px;
+  overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;padding:13px 15px;font-size:13.5px;color:var(--mute);border-bottom:2px solid transparent;letter-spacing:.05em}
 .tabs button[aria-pressed=true]{color:var(--gold);border-bottom-color:var(--gold);font-weight:700}
 .tt{width:100%;border-collapse:collapse;margin-top:6px}
 .tt th{font-size:10.5px;color:var(--mute);letter-spacing:.09em;font-weight:400;text-align:right;
@@ -187,6 +189,16 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .ei.s1 .eidot{background:var(--warn)} .ei.s1{border-color:#E8D5B0}
 .ei.s2 .eidot{background:var(--ok)} .ei.s2{opacity:.6}
 .ei.s2 span:nth-child(2){text-decoration:line-through;color:var(--mute)}
+
+.lr{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}
+.lg{font-size:15px;line-height:1}
+.ln{font-size:14px;font-weight:700;letter-spacing:.04em;min-width:44px}
+.lr s{text-decoration:none;margin-left:auto;font-size:12px;color:var(--mute);text-align:right}
+.wf{display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap}
+.wf input{flex:1 1 100%;font-size:14px;padding:10px 11px}
+.wf input.short{flex:0 0 88px}
+.wone{margin-bottom:7px;font-size:14px;padding:10px 11px}
+textarea[data-w]{font-size:14px;line-height:1.6;resize:vertical}
 .empty{text-align:center;padding:52px 20px;color:var(--mute);font-size:13.5px;line-height:1.8}
 </style>
 
@@ -228,7 +240,7 @@ async function load(){
   try{
     const r=await fetch(API+'?t='+Date.now(),{method:'GET'});
     const j=await r.json();
-    if(j&&j.ok){ logs=j.logs||{}; online=true; }
+    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; }
   }catch(e){ online=false; }
 }
 async function saveSeen(){ try{await window.storage.set(SEEN,JSON.stringify(seen),true);}catch(e){} }
@@ -275,6 +287,18 @@ function fmt(s){const p=s.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]);
 function dueDate(s,back){const p=s.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]);
   t.setDate(t.getDate()-back);
   return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
+
+function ymNow(){const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function ymNext(){const d=new Date(); d.setMonth(d.getMonth()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function monthProg(){const d=new Date();
+  const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  return d.getDate()/last;}
+function isLastWeek(){const d=new Date();
+  const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  return d.getDate()>last-7;}
+const pOf=m=>perf.find(x=>x.m===m)||null;
 
 /* ---------- helpers ---------- */
 const logOf=m=>logs[m.u+'|'+m.n];
@@ -469,7 +493,7 @@ function renderDept(){
     const ms2=teamOf(t);
     return {t,info:DATA.teams[t],...stat(ms2),tw:statWk(ms2,curWk())};
   });
-  const TAB=[['rank','喚醒'],['block','卡點'],['detail','明細'],['silent','未動'],['edu','教育'],['ev','活動']];
+  const TAB=[['wr','週報'],['perf','業績'],['rank','喚醒'],['block','卡點'],['detail','明細'],['silent','未動'],['edu','教育'],['ev','活動']];
   const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
   $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
   <div class="wrap">
@@ -480,7 +504,9 @@ function renderDept(){
     </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
     <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
-    ${tab==='rank'?`
+    ${tab==='wr'?wrBlock()
+     :tab==='perf'?perfBlock()
+     :tab==='rank'?`
       <table class="tt"><thead><tr><th>團隊</th><th>累計／可覆蓋</th><th>本週</th><th>意向（萬）</th></tr></thead><tbody>
       ${rows.map(r=>`<tr class="${r.con?'':'blank'}"><td>${r.t}</td>
         <td>${r.con} / ${r.info.cover}</td><td>${r.tw.con||'—'}</td>
@@ -508,6 +534,108 @@ function renderDept(){
   bindDetail();
 }
 
+
+
+/* ===== 燈號 ===== */
+function lights(){
+  const p=pOf(ymNow());
+  let L1='🟡',N1='尚未填入本月業績';
+  if(p&&p.goal){
+    const r=p.rev/p.goal, g=monthProg();
+    L1 = r>=g*0.9?'🟢' : r>=g*0.7?'🟡' : '🔴';
+    N1 = `達成 ${(r*100).toFixed(0)}%　月進度 ${(g*100).toFixed(0)}%`;
+  }
+  const tw=TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0);
+  const conAll=stat(DATA.members).con;
+  const L2 = tw>0?'🟢':(conAll>0?'🟡':'🔴');
+  const N2 = tw>0?`本週新增 ${tw} 筆`:(conAll>0?'本週尚無新增紀錄':'尚未開始接觸');
+  const all=PROJ.courses.concat([PROJ.sports]).filter(c=>daysTo(c.d)>=0)
+    .sort((a,b)=>daysTo(a.d)-daysTo(b.d));
+  let L3='🟢',N3='七堂已排定';
+  if(all.length){const c=all[0],i=PROJ.courses.indexOf(c),
+    k=(i>=0?'c'+i:'c'+PROJ.courses.length), s=proj[k]||{},
+    dd=daysTo(dueDate(c.d,14));
+    L3 = s.recv?'🟢':(dd<0?'🔴':dd<=7?'🟡':'🟢');
+    N3 = `下一場 ${fmt(c.d)}　教材${s.recv?'已收到':(dd<0?'逾期 '+(-dd)+' 天':'剩 '+dd+' 天')}`;}
+  let L4='🟢',N4='';
+  const ev=PROJ.events.filter(e=>daysTo(e.d)>=0).sort((a,b)=>daysTo(a.d)-daysTo(b.d))[0];
+  if(ev){const ei=PROJ.events.indexOf(ev);
+    const tot=ev.items.length, done=ev.items.filter((x,ii)=>(proj['e'+ei+'_'+ii]||0)===2).length;
+    const dt=daysTo(ev.d), pct=done/tot;
+    L4 = dt<=14&&pct<0.8?'🔴' : dt<=30&&pct<0.5?'🟡' : '🟢';
+    N4 = `${ev.name}　剩 ${dt} 天　前置 ${done}/${tot}`;}
+  return [['業績',L1,N1],['喚醒',L2,N2],['活動',L4,N4],['教育',L3,N3]];
+}
+
+/* ===== 週報一頁 ===== */
+function wrBlock(){
+  const w=proj.wr||{};
+  const rows=lights();
+  const pn=pOf(ymNext()), pc=pOf(ymNow());
+  return `
+  <div class="sect">一　三行狀態</div>
+  ${rows.map(([n,l,note])=>`<div class="lr"><span class="lg">${l}</span>
+    <span class="ln">${n}</span><s>${note}</s></div>`).join('')}
+
+  <div class="sect">二　需要主管決定</div>
+  <p class="note" style="padding:0 0 10px">每一項都要有「未決的預設處置」——沒有它，事情會一直掛著。</p>
+  ${[0,1,2].map(i=>`<div class="wf">
+    <input data-w="d${i}a" placeholder="事項" value="${esc(w['d'+i+'a']||'')}">
+    <input data-w="d${i}b" placeholder="期限" value="${esc(w['d'+i+'b']||'')}" class="short">
+    <input data-w="d${i}c" placeholder="未決 → 預設處置" value="${esc(w['d'+i+'c']||'')}">
+  </div>`).join('')}
+
+  <div class="sect">三　上週承諾 vs 本週完成</div>
+  <textarea data-w="done" rows="3" placeholder="已完成：　　　　主管待回：">${esc(w.done||'')}</textarea>
+
+  <div class="sect">四　下週優先　·　最多三項</div>
+  ${[0,1,2].map(i=>`<input class="wone" data-w="n${i}" placeholder="${i+1}."
+    value="${esc(w['n'+i]||'')}">`).join('')}
+
+  ${isLastWeek()?`
+  <div class="sect" style="color:var(--stop)">五　下月目標　·　${ymNext()}</div>
+  ${pn?`<table class="tt"><tbody>
+    <tr><td>目標</td><td class="g">${wan(pn.goal)} 萬</td></tr>
+    <tr><td>達成前提</td><td>${esc(pn.pre)||'—'}</td></tr>
+    <tr><td>前提不成立則調整為</td><td class="g">${pn.alt?wan(pn.alt)+' 萬':'—'}</td></tr>
+  </tbody></table>
+  <p class="note">承接自本月：${pc?`未達 ${wan(Math.max(pc.goal-pc.rev,0))} 萬`:'—'}
+  　意向未轉單 ${wan(stat(DATA.members).amt)} 萬</p>`
+  :`<p class="note">試算表「業績」工作表尚無 ${ymNext()} 這一列。<br>
+    請填入月份、目標、達成前提、前提不成立則調整為。</p>`}`:''}
+
+  <p class="note">燈號規則：業績看達成率對月進度；喚醒看本週是否有新增紀錄；
+  活動看剩餘天數對前置完成度；教育看下一場教材是否逾期。<br>
+  這一頁可直接投影。第二、三、四區是你填的，其餘自動。</p>`;
+}
+
+/* ===== 業績 ===== */
+function perfBlock(){
+  const p=pOf(ymNow());
+  if(!p) return `<div class="empty">試算表「業績」工作表尚無 ${ymNow()} 這一列。<br>
+    請填入月份、目標、累計營收、活躍人數。</div>`;
+  const r=p.goal?p.rev/p.goal:0, g=monthProg();
+  return `
+  <div class="prog" style="padding-top:16px"><div class="pnums">
+    <div class="pn"><i>${wan(p.rev)}</i><s>累計萬元</s></div>
+    <div class="pn"><i>${(r*100).toFixed(0)}<span style="font-size:13px">%</span></i><s>達成率</s></div>
+    <div class="pn"><i>${p.act}</i><s>活躍人數</s></div>
+  </div>
+  <div class="bar"><div style="width:${Math.min(r*100,100)}%"></div></div>
+  <div class="denom">目標 ${wan(p.goal)} 萬　·　月進度 ${(g*100).toFixed(0)}%　·　更新 ${esc(p.upd)||'—'}</div></div>
+  <table class="tt"><tbody>
+    <tr><td>缺口</td><td class="g">${wan(Math.max(p.goal-p.rev,0))} 萬</td></tr>
+    <tr><td>人均（本月）</td><td>${p.act?wan(p.rev/p.act):'—'} 萬</td></tr>
+    <tr><td>喚醒意向合計</td><td class="g">${wan(stat(DATA.members).amt)} 萬</td></tr>
+  </tbody></table>
+  <div class="sect">近月</div>
+  <table class="tt"><thead><tr><th>月</th><th>目標</th><th>累計</th><th>達成</th></tr></thead><tbody>
+  ${perf.slice(-6).reverse().map(x=>`<tr><td>${x.m}</td><td>${wan(x.goal)}</td>
+    <td>${wan(x.rev)}</td><td class="g">${x.goal?(x.rev/x.goal*100).toFixed(0)+'%':'—'}</td></tr>`).join('')}
+  </tbody></table>
+  <p class="note">數字來自試算表「業績」工作表，每週更新一次即可。<br>
+  週營收不列入 — 你的營收由檔期觸發，非檔期週趨近於零，逐週看會誤判。</p>`;
+}
 
 /* ===== 專案三：教育 ===== */
 function eduBlock(){
@@ -595,6 +723,8 @@ function detailBlock(ms,who){
   需要處理個案時私下問「這批你這邊狀況怎麼樣」，不要說「我看到你寫」。</p>`;
 }
 function bindProj(){
+  document.querySelectorAll('[data-w]').forEach(el=>el.onchange=async()=>{
+    proj.wr=proj.wr||{}; proj.wr[el.dataset.w]=el.value; await saveProj();});
   document.querySelectorAll('.ck').forEach(b=>b.onclick=async()=>{
     const k=b.dataset.p,f=b.dataset.f;
     proj[k]=proj[k]||{}; proj[k][f]=!proj[k][f];
@@ -676,6 +806,7 @@ $('#scrim').onclick=closeSheet;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
 let loading=true;
 let proj={};   // 專案二三狀態
+let perf=[];   // 業績（試算表「業績」工作表）
 function boot(){
   const q=new URLSearchParams(location.search).get('u');
   if(q&&TOKENS[q]){
