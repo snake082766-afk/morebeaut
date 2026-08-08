@@ -161,6 +161,32 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .loading{font-size:11px;color:var(--gold);letter-spacing:.08em;margin-top:8px;
   animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+
+.pc{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line);
+  border-radius:10px;padding:13px 14px;margin-bottom:9px;box-shadow:0 1px 2px rgba(43,39,33,.04)}
+.pc.warn{border-left-color:var(--warn)}
+.pc.late{border-left-color:var(--stop)}
+.pc.past{opacity:.5}
+.ptopic{font-size:13px;color:#5C5348;margin-top:7px;line-height:1.55}
+.pdue{font-size:11.5px;color:var(--mute);margin-top:7px}
+.pdue.bad{color:var(--stop);font-weight:700}
+.pchk{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.ck{padding:6px 11px;border:1px solid var(--line);border-radius:99px;background:var(--tint);
+  font-size:12px;color:var(--mute);transition:.18s}
+.ck[aria-pressed=true]{border-color:var(--gold);color:#fff;background:var(--gold);font-weight:700}
+.pnote{margin-top:9px;font-size:14px}
+.evdone{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.evdone span{font-size:11.5px;color:var(--ok);border:1px solid #CFE0D4;background:#F1F7F2;
+  padding:3px 9px;border-radius:99px}
+.ecat{font-size:11px;color:var(--gold);letter-spacing:.14em;margin:18px 0 7px;font-weight:700}
+.ei{width:100%;text-align:left;display:flex;align-items:flex-start;gap:10px;padding:11px 12px;
+  background:var(--card);border:1px solid var(--line);border-radius:9px;margin-bottom:6px;
+  font-size:13.5px;line-height:1.5;transition:.18s}
+.ei s{text-decoration:none;margin-left:auto;font-size:11px;color:var(--mute);white-space:nowrap;padding-top:2px}
+.eidot{width:8px;height:8px;border-radius:50%;background:var(--line);margin-top:6px;flex:0 0 auto}
+.ei.s1 .eidot{background:var(--warn)} .ei.s1{border-color:#E8D5B0}
+.ei.s2 .eidot{background:var(--ok)} .ei.s2{opacity:.6}
+.ei.s2 span:nth-child(2){text-decoration:line-through;color:var(--mute)}
 .empty{text-align:center;padding:52px 20px;color:var(--mute);font-size:13.5px;line-height:1.8}
 </style>
 
@@ -184,6 +210,9 @@ const OWNER = {time:'團隊長',noreply:'你 — 給對的一句話',offer:'行�
                money:'董事層 — 儲值額度',other:'個案'};
 const TEAMS = ['TOP','THE ONE','PRINCESSES','RICH'];
 const MARK='mark.png';
+const PROJ={"courses": [{"d": "2026-09-10", "mode": "線上", "host": "乃禎", "axis": "團隊", "topic": "認識公司理念／走向／福利、全勤獎獎勵制度"}, {"d": "2026-09-12", "mode": "線下", "host": "Adi", "axis": "銷售", "topic": "雙十活動前哨戰"}, {"d": "2026-10-05", "mode": "線上", "host": "花花", "axis": "銷售", "topic": "電商大月實戰分享"}, {"d": "2026-10-24", "mode": "線下", "host": "Ivy", "axis": "銷售", "topic": "電商大月成功案例分享"}, {"d": "2026-11-05", "mode": "線上", "host": "Ivy", "axis": "團隊", "topic": "如何喚醒夥伴提升團隊能力"}, {"d": "2026-11-28", "mode": "線下", "host": "尤安", "axis": "團隊", "topic": "喚醒夥伴後下一步執行"}, {"d": "2026-12-03", "mode": "線上", "host": "饅饅", "axis": "銷售", "topic": "雙十一成功案例分享及年度總結（全勤結業獎勵）"}], "sports": {"d": "2026-11-01", "mode": "實體", "host": "核心組", "axis": "活動", "topic": "運動會（核心自辦，已提供文件，主辦尋找場地中）"}, "events": [{"name": "9/23 季晚宴", "d": "2026-09-23", "done": ["場地已定", "訂金已付", "主持人已確認"], "items": [["節目", "流程表（時間、段落、誰上台）"], ["節目", "上台名單與順序"], ["節目", "頒獎項目與得獎名單"], ["節目", "主持人串場稿"], ["節目", "音樂、影片、簡報素材"], ["人", "出席名單與預估人數"], ["人", "報名截止日"], ["人", "座位或桌次"], ["人", "報到方式與現場人力"], ["物料", "獎項實物（獎座／獎狀）"], ["物料", "布置與背板"], ["物料", "攝影／錄影"], ["物料", "餐點或伴手禮確認"], ["收尾", "現場照片回收"], ["收尾", "會後訊息發布"]]}, {"name": "12/18 年會", "d": "2026-12-18", "done": ["場地已定", "訂金已付", "主持人已確認"], "items": [["先決", "年會要承載什麼訊息（轉型是否宣布、講到什麼程度）"], ["節目", "頒獎項目設計（12/3 全勤獎、1月競賽舊獎勵是否併頒）"], ["節目", "流程表"], ["節目", "得獎名單"], ["節目", "主持人串場稿"], ["節目", "年度影片製作（需提前 6–8 週）"], ["節目", "表演或節目排練"], ["人", "邀請函與外賓"], ["人", "出席名單與報名截止"], ["人", "座位或桌次"], ["人", "報到方式與現場人力"], ["物料", "獎項實物"], ["物料", "布置與背板"], ["物料", "攝影／錄影"], ["物料", "餐點確認"], ["收尾", "現場照片回收"], ["收尾", "會後訊息發布"]]}]};
+const PKEY='morebeaut-proj-v1';
+const CST=['未開始','進行中','完成'];
 const API='https://script.google.com/macros/s/AKfycbzYMxYvaWTeHt_o94JDay5oDNveuk6c8VKKqdKP5gSJKyn0BhXavcMWr4rCpKG37SgGpQ/exec';
 const TOKENS={"xub4n": {"type": "upline", "name": "必聖企業社", "t": "TOP"}, "4ywea": {"type": "upline", "name": "尤安娜企業社", "t": "PRINCESSES"}, "h28sg": {"type": "upline", "name": "子茗企業社", "t": "RICH"}, "wbr5e": {"type": "upline", "name": "慕妍生技企業社", "t": "THE ONE"}, "843v6": {"type": "upline", "name": "曾郁珊", "t": "TOP"}, "c58sn": {"type": "upline", "name": "梁靜倫", "t": "TOP"}, "by7q2": {"type": "upline", "name": "歆宸企業社", "t": "THE ONE"}, "rp2xk": {"type": "upline", "name": "林鳳姿", "t": "TOP"}, "e7qvx": {"type": "upline", "name": "曾沛語", "t": "TOP"}, "zdddh": {"type": "upline", "name": "李雅錡", "t": "RICH"}, "5u7xr": {"type": "upline", "name": "顏婕茹", "t": "TOP"}, "ahjyr": {"type": "upline", "name": "張靖珮", "t": "TOP"}, "7mnfr": {"type": "upline", "name": "有勝企業社", "t": "PRINCESSES"}, "q9new": {"type": "upline", "name": "林永隆", "t": "THE ONE"}, "c8ejm": {"type": "upline", "name": "沐邑企業社", "t": "PRINCESSES"}, "ydnb5": {"type": "upline", "name": "游荃棻", "t": "RICH"}, "yvvjk": {"type": "upline", "name": "呂心彤", "t": "THE ONE"}, "6znj4": {"type": "upline", "name": "張雅雯", "t": "TOP"}, "r3f2h": {"type": "upline", "name": "張芷瑄", "t": "PRINCESSES"}, "564ve": {"type": "upline", "name": "吳卉羚", "t": "TOP"}, "5wwng": {"type": "upline", "name": "王芷淇", "t": "PRINCESSES"}, "ze8bh": {"type": "upline", "name": "葉芳竹", "t": "TOP"}, "pxwvx": {"type": "upline", "name": "林芷瑄", "t": "TOP"}, "wc9ex": {"type": "upline", "name": "盧乃禎", "t": "PRINCESSES"}, "ecu9r": {"type": "upline", "name": "涂雅惠", "t": "TOP"}, "3yzgp": {"type": "upline", "name": "林湘芸", "t": "PRINCESSES"}, "rs5xq": {"type": "upline", "name": "林巧淳", "t": "THE ONE"}, "n5jsf": {"type": "upline", "name": "彭子宸", "t": "RICH"}, "43zv7": {"type": "upline", "name": "黃念慈", "t": "PRINCESSES"}, "zadpa": {"type": "upline", "name": "朱珮菱", "t": "PRINCESSES"}, "xd4yb": {"type": "upline", "name": "孫宥心", "t": "THE ONE"}, "jgfxs": {"type": "upline", "name": "施畇云", "t": "RICH"}, "tu9zt": {"type": "upline", "name": "吳金玲", "t": "PRINCESSES"}, "4zeu2": {"type": "upline", "name": "傅名芳", "t": "RICH"}, "m7xpj": {"type": "upline", "name": "吳雅涵", "t": "PRINCESSES"}, "3m89d": {"type": "upline", "name": "廖婉羚", "t": "RICH"}, "xmqdb": {"type": "upline", "name": "曾品綺", "t": "TOP"}, "f9utw": {"type": "upline", "name": "洪依晨", "t": "THE ONE"}, "hndky": {"type": "upline", "name": "江婕菱", "t": "TOP"}, "w5f85": {"type": "upline", "name": "林士弘", "t": "THE ONE"}, "kvn4v": {"type": "upline", "name": "林小萍", "t": "PRINCESSES"}, "unm6x": {"type": "upline", "name": "江至惠", "t": "TOP"}, "wk6kn": {"type": "upline", "name": "王玉琪", "t": "THE ONE"}, "5nm28": {"type": "upline", "name": "王渝婷", "t": "THE ONE"}, "9yzsq": {"type": "upline", "name": "胡詠婷", "t": "THE ONE"}, "m7d6k": {"type": "upline", "name": "籃芷渝", "t": "PRINCESSES"}, "azqcm": {"type": "upline", "name": "白繡華", "t": "PRINCESSES"}, "cpknj": {"type": "upline", "name": "許祕淑", "t": "THE ONE"}, "5nmtn": {"type": "upline", "name": "鍾宜君", "t": "PRINCESSES"}, "ghhcu": {"type": "upline", "name": "鄭雅萍", "t": "TOP"}, "chbwm": {"type": "upline", "name": "陳思蓓", "t": "THE ONE"}, "sgqjj": {"type": "upline", "name": "顏瑞緹", "t": "RICH"}, "g97hw": {"type": "leader", "team": "TOP"}, "q6ruc": {"type": "leader", "team": "THE ONE"}, "jbugf": {"type": "leader", "team": "PRINCESSES"}, "r9ar2": {"type": "leader", "team": "RICH"}, "dg58c": {"type": "dept"}};
 const SEEN='morebeaut-wake-seen-v2';
@@ -203,6 +232,9 @@ async function load(){
   }catch(e){ online=false; }
 }
 async function saveSeen(){ try{await window.storage.set(SEEN,JSON.stringify(seen),true);}catch(e){} }
+async function loadProj(){ try{const r=await window.storage.get(PKEY,true);
+  if(r&&r.value) proj=JSON.parse(r.value);}catch(e){} }
+async function saveProj(){ try{await window.storage.set(PKEY,JSON.stringify(proj),true);}catch(e){} }
 async function loadSeen(){ try{const r=await window.storage.get(SEEN,true);
   if(r&&r.value) seen=JSON.parse(r.value);}catch(e){} }
 async function push(m,rec){
@@ -233,6 +265,17 @@ function statWk(ms,key){
   const ls=ms.map(logOf).filter(l=>l&&wkOf(l)===key);
   return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0)};
 }
+/* ---------- 日期 ---------- */
+const WD='一二三四五六日';
+function daysTo(s){const p=s.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]);
+  const n=new Date(); n.setHours(0,0,0,0);
+  return Math.round((t-n)/86400000);}
+function fmt(s){const p=s.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]);
+  return (+p[1])+'/'+(+p[2])+'（'+WD[t.getDay()===0?6:t.getDay()-1]+'）';}
+function dueDate(s,back){const p=s.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]);
+  t.setDate(t.getDate()-back);
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
+
 /* ---------- helpers ---------- */
 const logOf=m=>logs[m.u+'|'+m.n];
 const mine=()=>DATA.members.filter(m=>m.u===role.name);
@@ -426,7 +469,7 @@ function renderDept(){
     const ms2=teamOf(t);
     return {t,info:DATA.teams[t],...stat(ms2),tw:statWk(ms2,curWk())};
   });
-  const TAB=[['rank','四隊進度'],['block','卡點'],['detail','明細'],['silent','未動的上線']];
+  const TAB=[['rank','喚醒'],['block','卡點'],['detail','明細'],['silent','未動'],['edu','教育'],['ev','活動']];
   const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
   $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
   <div class="wrap">
@@ -453,6 +496,8 @@ function renderDept(){
       這張表就是每週主管一頁式的數字來源。</p>`
      :tab==='block'?blockBlock(all)
      :tab==='detail'?detailBlock(all,'dept')
+     :tab==='edu'?eduBlock()
+     :tab==='ev'?evBlock()
      :`<div class="sect">本期尚無任何紀錄的上線</div>
        ${silent.length?silent.map(u=>`<div class="bl"><i>${u.c}</i><span>${esc(u.n)}</span><s>${u.t}</s></div>`).join('')
          :`<div class="empty">52 位上線都已有紀錄。</div>`}
@@ -461,6 +506,58 @@ function renderDept(){
   bindSw();
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
   bindDetail();
+}
+
+
+/* ===== 專案三：教育 ===== */
+function eduBlock(){
+  const all=PROJ.courses.concat([PROJ.sports]);
+  const nxt=all.filter(c=>daysTo(c.d)>=0).sort((a,b)=>daysTo(a.d)-daysTo(b.d))[0];
+  return `
+  <div class="sect">課程與運動會　·　共 ${all.length} 場</div>
+  <p class="note" style="padding:0 0 14px">課程由核心組規劃與主辦。你負責跟課、教材審核、場地與講師協助。<br>
+  <b>教材為上課前 14 天送審。</b>未收到即為黃燈。${nxt?`下一場：${fmt(nxt.d)} ${nxt.host}`:''}</p>
+  ${all.map((c,i)=>{
+    const k='c'+i, s=proj[k]||{};
+    const dt=daysTo(c.d), due=dueDate(c.d,14), dd=daysTo(due);
+    const late=!s.recv&&dd<0&&dt>=0;
+    const warn=!s.recv&&dd>=0&&dd<=7&&dt>=0;
+    return `<div class="pc ${dt<0?'past':(late?'late':(warn?'warn':''))}">
+      <div class="mrow">
+        <span class="mname">${fmt(c.d)}</span>
+        <span class="tag ${c.axis==='團隊'?'A':'B'}">${c.mode}</span>
+        <span class="mstate">${c.host}　${c.axis}</span>
+        <span class="mstate ${dt<0?'':'gold'}" style="margin-left:auto">${dt<0?'已過':'剩 '+dt+' 天'}</span>
+      </div>
+      <div class="ptopic">${c.topic}</div>
+      ${dt>=0?`<div class="pdue ${late?'bad':''}">教材送審 ${fmt(due)}${s.recv?'　·　已收到':(dd<0?'　·　已逾期 '+(-dd)+' 天':'　·　還有 '+dd+' 天')}</div>`:''}
+      <div class="pchk">
+        ${[['recv','教材已送我'],['rev','我已審'],['help','需我協助'],['go','我要到場']].map(([f,t])=>
+          `<button class="ck" data-p="${k}" data-f="${f}" aria-pressed="${!!s[f]}">${t}</button>`).join('')}
+      </div>
+      ${s.help?`<input class="pnote" data-p="${k}" data-f="hnote" placeholder="要協助什麼（場地／講師／其他）" value="${esc(s.hnote||'')}">`:''}
+    </div>`}).join('')}`;
+}
+
+/* ===== 專案二：活動 ===== */
+function evBlock(){
+  return PROJ.events.map((e,ei)=>{
+    const dt=daysTo(e.d);
+    const items=e.items.map((x,ii)=>({cat:x[0],name:x[1],k:'e'+ei+'_'+ii}));
+    const doneN=items.filter(x=>(proj[x.k]||0)===2).length;
+    const cats=[...new Set(items.map(x=>x.cat))];
+    return `
+    <div class="sect">${e.name}　·　剩 ${dt} 天</div>
+    <div class="evdone">${e.done.map(d=>`<span>✓ ${d}</span>`).join('')}</div>
+    <div class="bar" style="margin:12px 0 4px"><div style="width:${doneN/items.length*100}%"></div></div>
+    <div class="denom">已完成 ${doneN} / ${items.length} 項</div>
+    ${cats.map(c=>`<div class="ecat">${c}</div>
+      ${items.filter(x=>x.cat===c).map(x=>{const st=proj[x.k]||0;
+        return `<button class="ei s${st}" data-e="${x.k}">
+          <span class="eidot"></span><span>${x.name}</span><s>${CST[st]}</s></button>`}).join('')}`).join('')}`;
+  }).join('')+`<p class="note">點一下切換：未開始 → 進行中 → 完成。<br>
+  9/23 最該先定的是流程表與頒獎名單，其他項目都要等它。<br>
+  12/18 最該先問的是「年會要承載什麼訊息」，以及年度影片要提前 6–8 週。</p>`;
 }
 
 /* ===== 卡點 ===== */
@@ -496,6 +593,18 @@ function detailBlock(ms,who){
   ${rec.length?`<button class="more" id="exp">複製成表格（貼進 Excel）</button>`:''}
   <p class="note">明細僅供備查。<b>不要在群組引用單筆內容</b> — 一旦上線看到自己填的話被公開，下一週就沒人認真填了。<br>
   需要處理個案時私下問「這批你這邊狀況怎麼樣」，不要說「我看到你寫」。</p>`;
+}
+function bindProj(){
+  document.querySelectorAll('.ck').forEach(b=>b.onclick=async()=>{
+    const k=b.dataset.p,f=b.dataset.f;
+    proj[k]=proj[k]||{}; proj[k][f]=!proj[k][f];
+    await saveProj(); render();});
+  document.querySelectorAll('.pnote').forEach(el=>el.onchange=async()=>{
+    const k=el.dataset.p; proj[k]=proj[k]||{}; proj[k][el.dataset.f]=el.value;
+    await saveProj();});
+  document.querySelectorAll('.ei').forEach(b=>b.onclick=async()=>{
+    const k=b.dataset.e; proj[k]=((proj[k]||0)+1)%3;
+    await saveProj(); render();});
 }
 function bindDetail(){
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dfilter=b.dataset.d;render()});
@@ -566,6 +675,7 @@ function drawSheet(){
 $('#scrim').onclick=closeSheet;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
 let loading=true;
+let proj={};   // 專案二三狀態
 function boot(){
   const q=new URLSearchParams(location.search).get('u');
   if(q&&TOKENS[q]){
@@ -575,7 +685,7 @@ function boot(){
     if(role.type==='leader'){tab='self';} if(role.type==='dept'){tab='rank';}
   }
   render();
-  Promise.all([load(),loadSeen()]).then(()=>{ loading=false; render();
+  Promise.all([load(),loadSeen(),loadProj()]).then(()=>{ loading=false; render();
     if(!online) toast('連不上資料庫，紀錄不會保存'); });
 }
 boot();
