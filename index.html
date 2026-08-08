@@ -22,7 +22,7 @@
   --sans:'Noto Sans TC',system-ui,sans-serif; --serif:'Noto Serif TC',serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0;overflow-x:hidden;width:100%;max-width:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-weight:400;
   font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
   padding-bottom:env(safe-area-inset-bottom)}
@@ -36,7 +36,9 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+.wrap{max-width:520px;margin:0 auto;
+  padding-left:max(18px,env(safe-area-inset-left));
+  padding-right:max(18px,env(safe-area-inset-right))}
 .rule{height:1px;background:linear-gradient(90deg,var(--gold-soft),transparent);opacity:.6}
 
 header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdrop-filter:blur(12px);
@@ -45,7 +47,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .brand{font-family:var(--serif);font-weight:700;font-size:16px;letter-spacing:.16em;color:var(--gold);
   display:flex;align-items:center;gap:9px}
 .brand img{width:21px;height:21px;display:block}
-.lmark{width:46px;height:46px;display:block;margin:0 0 18px}
+.lmark{width:40px;height:40px;display:block;margin:0 0 20px}
 .who{font-size:11.5px;color:var(--mute);letter-spacing:.05em;text-align:right;line-height:1.35}
 .who b{display:block;color:var(--ink);font-weight:700;font-size:13px;letter-spacing:.02em}
 
@@ -59,7 +61,10 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .bar div{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));
   transition:width .5s cubic-bezier(.2,.8,.3,1)}
 
-.filters{display:flex;gap:7px;overflow-x:auto;padding:11px 16px;margin:0 -16px;scrollbar-width:none}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:12px 18px;
+  margin-left:calc(-1 * max(18px,env(safe-area-inset-left)));
+  margin-right:calc(-1 * max(18px,env(safe-area-inset-right)));
+  scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
 .fc{flex:0 0 auto;padding:6px 13px;border:1px solid var(--line);border-radius:99px;background:var(--card);
   font-size:12.5px;color:var(--mute);white-space:nowrap;transition:.18s}
@@ -67,7 +72,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 
 .list{padding:2px 0 90px}
 .mc{width:100%;text-align:left;display:block;background:var(--card);border:1px solid var(--line);
-  border-left:3px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:9px;transition:.18s;
+  border-left:3px solid var(--line);border-radius:10px;padding:14px 15px;margin-bottom:10px;transition:.18s;
   box-shadow:0 1px 2px rgba(43,39,33,.04)}
 .mc:active{transform:scale(.988)}
 .mc.done{border-left-color:var(--ok)}
@@ -119,7 +124,11 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .skip{width:100%;padding:12px;font-size:13px;color:var(--mute);margin-top:6px}
 
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:4px;
-  overflow-x:auto;scrollbar-width:none}
+  overflow-x:auto;scrollbar-width:none;
+  margin-left:calc(-1 * max(18px,env(safe-area-inset-left)));
+  margin-right:calc(-1 * max(18px,env(safe-area-inset-right)));
+  padding-left:max(18px,env(safe-area-inset-left));
+  padding-right:max(18px,env(safe-area-inset-right))}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{flex:0 0 auto;padding:13px 15px;font-size:13.5px;color:var(--mute);border-bottom:2px solid transparent;letter-spacing:.05em}
 .tabs button[aria-pressed=true]{color:var(--gold);border-bottom-color:var(--gold);font-weight:700}
@@ -140,11 +149,11 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .bl s{text-decoration:none;color:var(--mute);font-size:12px;margin-left:auto}
 .note{font-size:11.5px;color:var(--mute);line-height:1.7;padding:14px 0 30px}
 
-.login{padding:44px 0 30px}
-.login h1{font-family:var(--serif);font-size:25px;font-weight:700;letter-spacing:.1em;margin:0 0 6px;color:var(--gold)}
-.login p{font-size:13px;color:var(--mute);margin:0 0 26px}
-.ug{display:flex;flex-direction:column;gap:8px}
-.ub{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);
+.login{padding:38px 0 40px}
+.login h1{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:.08em;margin:0 0 8px;color:var(--gold);line-height:1.5}
+.login p{font-size:13px;color:var(--mute);margin:0;line-height:1.75}
+.ug{display:flex;flex-direction:column;gap:9px}
+.ub{display:flex;align-items:center;gap:12px;padding:15px 16px;background:var(--card);
   border:1px solid var(--line);border-radius:10px;text-align:left;transition:.18s;
   box-shadow:0 1px 2px rgba(43,39,33,.04)}
 .ub:active{transform:scale(.99)}
@@ -324,7 +333,7 @@ function stat(ms){
   const ls=ms.map(logOf).filter(Boolean);
   return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0)};
 }
-const wan=v=>v?(v/10000).toFixed(1):'0';
+const wan=v=>v?(v/10000).toLocaleString('zh-TW',{minimumFractionDigits:1,maximumFractionDigits:1}):'0.0';
 function delta(now,was){
   if(was==null) return '';
   const d=now-was;
@@ -543,7 +552,7 @@ function lights(){
   if(p&&p.goal){
     const r=p.rev/p.goal, g=monthProg();
     L1 = r>=g*0.9?'🟢' : r>=g*0.7?'🟡' : '🔴';
-    N1 = `達成 ${(r*100).toFixed(0)}%　月進度 ${(g*100).toFixed(0)}%`;
+    N1 = `達成 ${(r*100).toFixed(1)}%　月進度 ${(g*100).toFixed(1)}%`;
   }
   const tw=TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0);
   const conAll=stat(DATA.members).con;
@@ -618,11 +627,11 @@ function perfBlock(){
   return `
   <div class="prog" style="padding-top:16px"><div class="pnums">
     <div class="pn"><i>${wan(p.rev)}</i><s>累計萬元</s></div>
-    <div class="pn"><i>${(r*100).toFixed(0)}<span style="font-size:13px">%</span></i><s>達成率</s></div>
+    <div class="pn"><i>${(r*100).toFixed(1)}<span style="font-size:13px">%</span></i><s>達成率</s></div>
     <div class="pn"><i>${p.act}</i><s>活躍人數</s></div>
   </div>
   <div class="bar"><div style="width:${Math.min(r*100,100)}%"></div></div>
-  <div class="denom">目標 ${wan(p.goal)} 萬　·　月進度 ${(g*100).toFixed(0)}%　·　更新 ${esc(p.upd)||'—'}</div></div>
+  <div class="denom">目標 ${wan(p.goal)} 萬　·　月進度 ${(g*100).toFixed(1)}%　·　更新 ${esc(p.upd)||'—'}</div></div>
   <table class="tt"><tbody>
     <tr><td>缺口</td><td class="g">${wan(Math.max(p.goal-p.rev,0))} 萬</td></tr>
     <tr><td>人均（本月）</td><td>${p.act?wan(p.rev/p.act):'—'} 萬</td></tr>
@@ -631,7 +640,7 @@ function perfBlock(){
   <div class="sect">近月</div>
   <table class="tt"><thead><tr><th>月</th><th>目標</th><th>累計</th><th>達成</th></tr></thead><tbody>
   ${perf.slice(-6).reverse().map(x=>`<tr><td>${x.m}</td><td>${wan(x.goal)}</td>
-    <td>${wan(x.rev)}</td><td class="g">${x.goal?(x.rev/x.goal*100).toFixed(0)+'%':'—'}</td></tr>`).join('')}
+    <td>${wan(x.rev)}</td><td class="g">${x.goal?(x.rev/x.goal*100).toFixed(1)+'%':'—'}</td></tr>`).join('')}
   </tbody></table>
   <p class="note">數字來自試算表「業績」工作表，每週更新一次即可。<br>
   週營收不列入 — 你的營收由檔期觸發，非檔期週趨近於零，逐週看會誤判。</p>`;
