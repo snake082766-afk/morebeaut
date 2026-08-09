@@ -624,6 +624,7 @@ function perfBlock(){
   if(!p) return `<div class="empty">試算表「業績」工作表尚無 ${ymNow()} 這一列。<br>
     請填入月份、目標、累計營收、活躍人數。</div>`;
   const r=p.goal?p.rev/p.goal:0, g=monthProg();
+  const wakeRate = p.wake ? (p.wake/442*100) : null;
   return `
   <div class="prog" style="padding-top:16px"><div class="pnums">
     <div class="pn"><i>${wan(p.rev)}</i><s>累計萬元</s></div>
@@ -631,16 +632,26 @@ function perfBlock(){
     <div class="pn"><i>${p.act}</i><s>活躍人數</s></div>
   </div>
   <div class="bar"><div style="width:${Math.min(r*100,100)}%"></div></div>
-  <div class="denom">目標 ${wan(p.goal)} 萬　·　月進度 ${(g*100).toFixed(1)}%　·　更新 ${esc(p.upd)||'—'}</div></div>
+  <div class="denom">目標 ${wan(p.goal)} 萬　·　月進度 ${(g*100).toFixed(1)}%　·　更新 ${esc(p.upd)||'—'}</div>
+  <div class="denom" style="margin-top:3px">活躍人數＝整月不重複下單人數，同一人買多檔活動只算一次</div></div>
   <table class="tt"><tbody>
     <tr><td>缺口</td><td class="g">${wan(Math.max(p.goal-p.rev,0))} 萬</td></tr>
     <tr><td>人均（本月）</td><td>${p.act?wan(p.rev/p.act):'—'} 萬</td></tr>
     <tr><td>喚醒意向合計</td><td class="g">${wan(stat(DATA.members).amt)} 萬</td></tr>
   </tbody></table>
+  <div class="sect">喚醒成效　·　442 人名單</div>
+  ${p.wake ? `
+  <table class="tt"><tbody>
+    <tr><td>本月下單數</td><td class="g">${p.wake} / 442</td></tr>
+    <tr><td>喚醒轉換率</td><td class="g">${wakeRate.toFixed(1)}%</td></tr>
+  </tbody></table>
+  <p class="note">喚醒轉換率＝喚醒名單本月下單數 ÷ 442。這是喚醒專案是否有效的直接指標，與全公司活躍人數是兩件事。</p>`
+  : `<p class="note">本月尚未填入「喚醒名單下單數」。這欄需月底用原始訂單 Excel 對照 442 人名單後填入，是判斷喚醒成效的核心數字。</p>`}
   <div class="sect">近月</div>
-  <table class="tt"><thead><tr><th>月</th><th>目標</th><th>累計</th><th>達成</th></tr></thead><tbody>
+  <table class="tt"><thead><tr><th>月</th><th>目標</th><th>累計</th><th>達成</th><th>喚醒</th></tr></thead><tbody>
   ${perf.slice(-6).reverse().map(x=>`<tr><td>${x.m}</td><td>${wan(x.goal)}</td>
-    <td>${wan(x.rev)}</td><td class="g">${x.goal?(x.rev/x.goal*100).toFixed(1)+'%':'—'}</td></tr>`).join('')}
+    <td>${wan(x.rev)}</td><td class="g">${x.goal?(x.rev/x.goal*100).toFixed(1)+'%':'—'}</td>
+    <td>${x.wake?x.wake+'人':'—'}</td></tr>`).join('')}
   </tbody></table>
   <p class="note">數字來自試算表「業績」工作表，每週更新一次即可。<br>
   週營收不列入 — 你的營收由檔期觸發，非檔期週趨近於零，逐週看會誤判。</p>`;
