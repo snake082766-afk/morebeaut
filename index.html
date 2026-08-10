@@ -208,6 +208,11 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .wf input.short{flex:0 0 88px}
 .wone{margin-bottom:7px;font-size:14px;padding:10px 11px}
 textarea[data-w]{font-size:14px;line-height:1.6;resize:vertical}
+.peekbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;
+  padding:10px 14px;margin-top:12px;background:rgba(201,169,97,.1);border:1px solid var(--gold-soft);
+  border-radius:9px;font-size:11.5px;color:#5C5348}
+.peekbar button{flex:0 0 auto;padding:6px 12px;background:var(--gold);color:#fff;border-radius:99px;
+  font-size:11.5px;font-weight:700;white-space:nowrap}
 .empty{text-align:center;padding:52px 20px;color:var(--mute);font-size:13.5px;line-height:1.8}
 </style>
 
@@ -243,6 +248,7 @@ let role=null;              // {type:'upline',name} | {type:'leader',team} | {ty
 let filter='todo', tab='rank', dfilter='all';
 let editing=null, draft={}, showAll=false;
 let seen={}, showIntro=false;
+let peek=null; // 經銷部借看團隊長/上線視角，僅供檢視
 
 /* ---------- 資料存取：Google 試算表 ---------- */
 async function load(){
@@ -343,6 +349,10 @@ function delta(now,was){
 
 /* ---------- render ---------- */
 function render(){ if(!role) return renderLogin();
+  if(peek){
+    if(peek.type==='leader') return renderLeader(true);
+    if(peek.type==='upline') return renderUpline(true);
+  }
   if(role.type==='upline'){
     if(showIntro||(!loading&&!seen[role.name])) return renderIntro();
     return renderUpline();
@@ -383,6 +393,15 @@ function bar(title,sub){
     <button class="who" id="sw">${sub}<b>切換 ›</b></button>
   </div></div><div class="rule"></div></header>`;
 }
+function peekBar(label){
+  return `<div class="wrap"><div class="peekbar" id="peekbar">
+    <span>${esc(label)}　·　僅供檢視，不影響其權限或紀錄歸屬</span>
+    <button id="peekback">返回經銷部 ›</button>
+  </div></div>`;
+}
+function bindPeek(){
+  const b=$('#peekback'); if(b) b.onclick=()=>{ peek=null; tab='view'; render(); window.scrollTo(0,0); };
+}
 function bindSw(){ const b=$('#sw'); if(!b) return;
   if(new URLSearchParams(location.search).get('u')){ b.querySelector('b').textContent='';
     b.style.pointerEvents='none'; return; }
@@ -410,8 +429,9 @@ function renderIntro(){
 }
 
 /* ===== 上線端 ===== */
-function renderUpline(){
-  const ms=mine(), s=stat(ms);
+function renderUpline(isPeek){
+  const ctx=isPeek?peek:role;
+  const ms=DATA.members.filter(m=>m.u===ctx.name), s=stat(ms);
   const counts={all:ms.length,todo:ms.filter(m=>stateOf(m)==='todo').length,
     A:ms.filter(m=>m.g==='A').length,B:ms.filter(m=>m.g==='B').length,
     D:ms.filter(m=>['C','D','E'].includes(m.g)).length};
@@ -421,7 +441,8 @@ function renderUpline(){
            :filter==='D'?['C','D','E'].includes(m.g):m.g===filter);
   let hidden=0;
   if(filter==='todo'&&show.length>batch){ hidden=show.length-batch; show=show.slice(0,batch); }
-  $('#app').innerHTML=bar('茉本喚醒追蹤',esc(role.name))+`
+  $('#app').innerHTML=bar('茉本喚醒追蹤',esc(ctx.name))+
+    (isPeek?peekBar('上線視角：'+ctx.name):'')+`
   <div class="wrap">
     <div class="prog"><div class="pnums">
       <div class="pn"><i>${s.con}</i><s>已接觸 / ${ms.length}</s></div>
@@ -434,12 +455,13 @@ function renderUpline(){
       :`<div class="empty">這一組都記過了。<br>切到「全部」可以修改先前的紀錄。</div>`}
       ${hidden?`<div class="batchnote">先跑這 ${batch} 位。記完之後，下一批 ${hidden} 位會自動出現。<br>
         一次面對太多人反而會停在第五個。</div>`:''}
-      <button class="reread" id="rr">再看一次這份名單的說明</button></div>
+      ${isPeek?'':`<button class="reread" id="rr">再看一次這份名單的說明</button>`}</div>
   </div>`;
   bindSw();
-  $('#rr').onclick=()=>{showIntro=true;go();};
+  if(isPeek) bindPeek();
+  else { $('#rr').onclick=()=>{showIntro=true;go();}; }
   document.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
-  document.querySelectorAll('.mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+  if(!isPeek) document.querySelectorAll('.mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
 }
 function card(m){
   const st=stateOf(m),[lbl,cls]=STATE[st],l=logOf(m),[tag,line]=hookOf(m);
@@ -455,12 +477,14 @@ function card(m){
 }
 
 /* ===== 團隊長端 ===== */
-function renderLeader(){
-  const T=role.team, info=DATA.teams[T], ms=teamOf(T), s=stat(ms);
+function renderLeader(isPeek){
+  const ctx=isPeek?peek:role;
+  const T=ctx.team, info=DATA.teams[T], ms=teamOf(T), s=stat(ms);
   const tw=statWk(ms,curWk()), lw=statWk(ms,prevWk());
   const pct=info.cover?s.con/info.cover*100:0;
   const TAB=[['self','本週進度'],['detail','明細'],['block','卡點']];
-  $('#app').innerHTML=bar(T+' TEAM',esc(T)+' 團隊長')+`
+  $('#app').innerHTML=bar(T+' TEAM',esc(T)+' 團隊長')+
+    (isPeek?peekBar('團隊長視角：'+T):'')+`
   <div class="wrap">
     <div class="prog"><div class="pnums">
       <div class="pn"><i>${tw.con}</i><s>本週接觸 ${delta(tw.con,lw.con)}</s></div>
@@ -474,6 +498,7 @@ function renderLeader(){
      :blockBlock(ms)}
   </div>`;
   bindSw();
+  if(isPeek) bindPeek();
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
   bindDetail();
 }
@@ -502,7 +527,7 @@ function renderDept(){
     const ms2=teamOf(t);
     return {t,info:DATA.teams[t],...stat(ms2),tw:statWk(ms2,curWk())};
   });
-  const TAB=[['wr','週報'],['perf','業績'],['rank','喚醒'],['block','卡點'],['detail','明細'],['silent','未動'],['edu','教育'],['ev','活動']];
+  const TAB=[['wr','週報'],['perf','業績'],['rank','喚醒'],['block','卡點'],['detail','明細'],['silent','未動'],['edu','教育'],['ev','活動'],['view','視角']];
   const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
   $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
   <div class="wrap">
@@ -533,6 +558,7 @@ function renderDept(){
      :tab==='detail'?detailBlock(all,'dept')
      :tab==='edu'?eduBlock()
      :tab==='ev'?evBlock()
+     :tab==='view'?viewBlock()
      :`<div class="sect">本期尚無任何紀錄的上線</div>
        ${silent.length?silent.map(u=>`<div class="bl"><i>${u.c}</i><span>${esc(u.n)}</span><s>${u.t}</s></div>`).join('')
          :`<div class="empty">52 位上線都已有紀錄。</div>`}
@@ -541,6 +567,27 @@ function renderDept(){
   bindSw();
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
   bindDetail();
+  bindView();
+}
+
+/* ===== 視角：借看團隊長／上線畫面 ===== */
+function viewBlock(){
+  const ups=DATA.uplines.slice().sort((a,b)=>b.c-a.c);
+  return `
+  <div class="sect">團隊長視角</div>
+  ${TEAMS.map(t=>`<button class="bl" data-peek-l="${t}" style="width:100%;text-align:left;cursor:pointer">
+    <i>›</i><span>${t} 團隊長</span></button>`).join('')}
+  <div class="sect">上線視角　·　52 位活躍上線</div>
+  ${ups.map(u=>`<button class="bl" data-peek-u="${esc(u.n)}" style="width:100%;text-align:left;cursor:pointer">
+    <i>›</i><span>${esc(u.n)}</span><s>${u.t}　${u.c} 人</s></button>`).join('')}
+  <p class="note">點選後會切換成該身分實際看到的畫面，方便你直接檢視卡點與明細，不用等對方回報。<br>
+  這只是借看，不影響任何人的權限或紀錄歸屬；只有你（經銷部）能用這個功能。</p>`;
+}
+function bindView(){
+  document.querySelectorAll('[data-peek-l]').forEach(b=>b.onclick=()=>{
+    peek={type:'leader',team:b.dataset.peekL}; render(); window.scrollTo(0,0);});
+  document.querySelectorAll('[data-peek-u]').forEach(b=>b.onclick=()=>{
+    peek={type:'upline',name:b.dataset.peekU}; render(); window.scrollTo(0,0);});
 }
 
 
