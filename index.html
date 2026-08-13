@@ -274,8 +274,18 @@ async function load(){
   try{
     const r=await fetch(API+'?t='+Date.now(),{method:'GET'});
     const j=await r.json();
-    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; }
+    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; normSb(); }
   }catch(e){ online=false; }
+}
+function normSb(){
+  // sb 由後端提供；若為舊紀錄（盒數曾夾在補充欄），在此還原
+  Object.values(logs).forEach(l=>{
+    if(!l) return;
+    if(l.sb!=null&&l.sb!==''&&Number(l.sb)>0){ l.sb=Number(l.sb); return; }
+    l.sb=0;
+    const mm=/^SB(\d+)盒(?:｜([\s\S]*))?$/.exec(l.note||'');
+    if(mm){ l.sb=Number(mm[1])||0; l.note=mm[2]||''; }
+  });
 }
 async function saveSeen(){ try{await window.storage.set(SEEN,JSON.stringify(seen),true);}catch(e){} }
 async function loadProj(){ try{const r=await window.storage.get(PKEY,true);
@@ -285,7 +295,7 @@ async function loadSeen(){ try{const r=await window.storage.get(SEEN,true);
   if(r&&r.value) seen=JSON.parse(r.value);}catch(e){} }
 async function push(m,rec){
   const body={key:m.u+'|'+m.n,team:m.t,upline:m.u,member:m.n,group:m.g+'｜'+m.gn,
-    d:rec.d,reply:rec.reply,amt:rec.amt,block:rec.block,
+    d:rec.d,reply:rec.reply,amt:rec.amt,sb:rec.sb||0,block:rec.block,
     blockLabel:BMAP[rec.block]||'',note:rec.note,ts:rec.ts};
   const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});
   const j=await r.json();
@@ -309,7 +319,9 @@ function wkOf(l){ if(!l||!l.d) return ''; const p=String(l.d).split('-');
   return p.length<3?'':wk(new Date(+p[0],+p[1]-1,+p[2])); }
 function statWk(ms,key){
   const ls=ms.map(logOf).filter(l=>l&&wkOf(l)===key);
-  return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0)};
+  return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0),
+    sb:ls.reduce((s,l)=>s+(l.sb||0),0),sbn:ls.filter(l=>l.sb>0).length,
+    sbi:ls.filter(l=>l.sb>0&&l.amt>0).length};
 }
 /* ---------- 日期 ---------- */
 const WD='一二三四五六日';
@@ -349,14 +361,16 @@ const STATE={todo:['未接觸',''],contacted:['已接觸',''],replied:['有回�
              intent:['有意向','gold'],blocked:['有卡點','stop']};
 function hookOf(m){
   if(m.g==='A') return ['檔期主力','確認這一檔的規格與金額，不用重新說明品牌。'];
-  if(m.g==='B') return ['手上可能還有貨','<b>不是要他再進貨</b>，是公關品幫他把上次那批賣動。'];
-  if(m.g==='C') return ['有下線','先讓他本人動起來，他底下的人才會跟著動。'];
+  if(m.g==='B') return ['手上可能還有貨','<b>不是要他再進貨</b>，是 SB 幫他把上次那批賣動。'];
+  if(m.g==='C') return ['有下線','給他 SB 分下線，先讓他本人動起來，底下才會跟著動。'];
   if(m.p) return ['指名回購',`「你上次買的<b>${esc(m.p)}</b>，這個月回購有優惠，要幫你留嗎？」`];
   return ['指名回購','用他上次買的品項開場，不要談品牌方向。'];
 }
 function stat(ms){
   const ls=ms.map(logOf).filter(Boolean);
-  return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0)};
+  return {con:ls.length,rep:ls.filter(l=>l.reply).length,amt:ls.reduce((s,l)=>s+(l.amt||0),0),
+    sb:ls.reduce((s,l)=>s+(l.sb||0),0),sbn:ls.filter(l=>l.sb>0).length,
+    sbi:ls.filter(l=>l.sb>0&&l.amt>0).length};
 }
 const wan=v=>v?(v/10000).toLocaleString('zh-TW',{minimumFractionDigits:1,maximumFractionDigits:1}):'0.0';
 function delta(now,was){
@@ -489,7 +503,7 @@ function card(m){
     <div class="mrow"><span class="mname">${esc(m.n)}</span>
       <span class="tag ${m.g}">${m.g}</span>
       <span class="mstate ${cls}">${lbl}${l&&l.amt?'　'+wan(l.amt)+'萬':''}</span></div>
-    <div class="mmeta">最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}</div>
+    <div class="mmeta">最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}${l&&l.sb?`　·　已給 SB ${l.sb} 盒`:''}</div>
     ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
       :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
   </button>`;
@@ -531,7 +545,9 @@ function selfBlock(T,s,tw,lw,info){
     <tr><td>接觸</td><td>${lw.con||'—'}</td><td class="g">${tw.con}</td></tr>
     <tr><td>有回應</td><td>${lw.rep||'—'}</td><td class="g">${tw.rep}</td></tr>
     <tr><td>意向（萬）</td><td>${lw.amt?wan(lw.amt):'—'}</td><td class="g">${wan(tw.amt)}</td></tr>
+    <tr><td>SB（盒）</td><td>${lw.sb||'—'}</td><td class="g">${tw.sb||0}</td></tr>
   </tbody></table>
+  <div class="denom">SB 累計已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已有意向</div>
   <div class="sect">你隊上線的進度　·　由低到高</div>
   ${byUp.map(x=>`<div class="bl"><i>${x.con}/${x.total}</i><span>${esc(x.u.n)}</span>
     <s>${x.amt?wan(x.amt)+'萬':'—'}</s></div>`).join('')}
@@ -555,7 +571,8 @@ function renderDept(){
       <div class="pn"><i>${s.rep}</i><s>有回應</s></div>
       <div class="pn"><i>${wan(s.amt)}</i><s>意向萬元</s></div>
     </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
-    <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div></div>
+    <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div>
+    <div class="denom">SB 已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已有意向${s.sbn?`（${Math.round(s.sbi/s.sbn*100)}%）`:''}</div></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
     ${tab==='wr'?wrBlock()
      :tab==='perf'?perfBlock()
@@ -789,9 +806,10 @@ function blockBlock(ms){
 /* ===== 明細 ===== */
 function detailBlock(ms,who){
   const rec=ms.filter(m=>logOf(m));
-  const D=[['all','全部 '+rec.length],['intent','有意向'],['block','有卡點'],['noreply','無回應']];
+  const D=[['all','全部 '+rec.length],['sb','已給 SB '+rec.filter(m=>logOf(m).sb>0).length],
+           ['intent','有意向'],['block','有卡點'],['noreply','無回應']];
   let show=rec.filter(m=>{const l=logOf(m);
-    return dfilter==='all'?true:dfilter==='intent'?l.amt>0
+    return dfilter==='all'?true:dfilter==='sb'?l.sb>0:dfilter==='intent'?l.amt>0
       :dfilter==='block'?(l.block&&l.block!=='ok'):!l.reply;});
   show.sort((a,b)=>(logOf(b).amt||0)-(logOf(a).amt||0)||logOf(b).ts-logOf(a).ts);
   return `
@@ -801,7 +819,7 @@ function detailBlock(ms,who){
       <div class="mrow"><span class="mname">${esc(m.n)}</span>
         <span class="tag ${m.g}">${m.g}</span>
         <span class="mstate ${l.amt?'gold':(l.reply?'ok':'')}">${l.amt?wan(l.amt)+'萬':(l.reply?'有回應':'無回應')}</span></div>
-      <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${l.d}${who==='dept'?'　·　'+m.t:''}</div>
+      <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${l.d}${who==='dept'?'　·　'+m.t:''}${l.sb?'　·　SB '+l.sb+' 盒':''}</div>
       ${l.block&&l.block!=='ok'?`<div class="hook"><b>${esc(BMAP[l.block])}</b>${l.note?'　'+esc(l.note):''}</div>`:''}
     </div>`}).join(''):`<div class="empty">尚無紀錄。</div>`}
   ${rec.length?`<button class="more" id="exp">複製成表格（貼進 Excel）</button>`:''}
@@ -828,9 +846,9 @@ function bindDetail(){
 }
 function doExport(){
   const ms=(role.type==='leader'?teamOf(role.team):DATA.members).filter(m=>logOf(m));
-  const rows=[['團隊','上線','下線','分組','接觸日','有回應','意向金額','卡點','補充']];
+  const rows=[['團隊','上線','下線','分組','接觸日','有回應','意向金額','SB盒數','卡點','補充']];
   ms.forEach(m=>{const l=logOf(m);
-    rows.push([m.t,m.u,m.n,m.g+'｜'+m.gn,l.d,l.reply?'有':'無',l.amt||0,BMAP[l.block]||'',l.note||'']);});
+    rows.push([m.t,m.u,m.n,m.g+'｜'+m.gn,l.d,l.reply?'有':'無',l.amt||0,l.sb||0,BMAP[l.block]||'',l.note||'']);});
   const tsv=rows.map(r=>r.join('\t')).join('\n');
   navigator.clipboard.writeText(tsv).then(()=>toast('已複製 '+ms.length+' 筆'),()=>toast('複製失敗'));
 }
@@ -839,7 +857,7 @@ function doExport(){
 function openSheet(name){
   editing=mine().find(m=>m.n===name);
   const l=logOf(editing);
-  draft=l?{...l}:{d:today(),reply:null,amt:'',block:null,note:''};
+  draft=l?{...l,sb:l.sb||''}:{d:today(),reply:null,amt:'',sb:'',block:null,note:''};
   drawSheet(); $('#scrim').classList.add('on'); $('#sheet').classList.add('on');
 }
 function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.remove('on');editing=null;}
@@ -860,6 +878,8 @@ function drawSheet(){
         <button data-r="1" aria-pressed="${draft.reply===true}">有回應</button></div></div>
       <div class="fld"><label class="lb" for="am">意向金額（沒有就留空）</label>
         <input type="number" id="am" inputmode="numeric" placeholder="0" value="${draft.amt||''}"></div>
+      <div class="fld"><label class="lb" for="sbx">給了幾盒 SB（沒給就留空）</label>
+        <input type="number" id="sbx" inputmode="numeric" placeholder="0" value="${draft.sb||''}"></div>
       <div class="fld"><span class="lb">卡點　·　必選</span><div class="blocks">${BLOCKS.map(b=>`
         <button data-b="${b.k}" aria-pressed="${draft.block===b.k}">
           <span class="dot"></span><span>${b.t}<em>${b.d}</em></span></button>`).join('')}</div></div>
@@ -870,6 +890,7 @@ function drawSheet(){
     </div>`;
   $('#dt').onchange=e=>draft.d=e.target.value;
   $('#am').oninput=e=>draft.amt=e.target.value;
+  const sx=$('#sbx'); if(sx) sx.oninput=e=>draft.sb=e.target.value;
   const nt=$('#nt'); if(nt) nt.oninput=e=>draft.note=e.target.value;
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{draft.reply=b.dataset.r==='1';keep();drawSheet();});
   document.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{
@@ -881,11 +902,12 @@ function drawSheet(){
   $('#sv').onclick=async()=>{keep();
     const btn=$('#sv'); btn.disabled=true; btn.textContent='儲存中…';
     const rec={d:draft.d,reply:draft.reply,amt:Number(draft.amt)||0,
-      block:draft.block,note:draft.note||'',ts:Date.now()};
+      sb:Number(draft.sb)||0,block:draft.block,note:draft.note||'',ts:Date.now()};
     try{ await push(m,rec); logs[m.u+'|'+m.n]=rec; closeSheet(); render(); toast('已記錄 '+m.n); }
     catch(err){ btn.disabled=false; btn.textContent='重試'; toast('沒有存到，請確認網路後重試'); }};
-  function keep(){const a=$('#am'),n=$('#nt'),d=$('#dt');
-    if(a)draft.amt=a.value; if(n)draft.note=n.value; if(d)draft.d=d.value;}
+  function keep(){const a=$('#am'),n=$('#nt'),d=$('#dt'),s=$('#sbx');
+    if(a)draft.amt=a.value; if(n)draft.note=n.value; if(d)draft.d=d.value;
+    if(s)draft.sb=s.value;}
 }
 
 $('#scrim').onclick=closeSheet;
