@@ -288,12 +288,26 @@ let seen={}, showIntro=false;
 let peek=null; // 經銷部借看團隊長/上線視角，僅供檢視
 
 /* ---------- 資料存取：Google 試算表 ---------- */
+let netErr='';
 async function load(){
   try{
     const r=await fetch(API+'?t='+Date.now(),{method:'GET'});
-    const j=await r.json();
-    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; normSb(); }
-  }catch(e){ online=false; }
+    if(!r.ok){ netErr='伺服器回 HTTP '+r.status+'（部署或權限問題）'; return; }
+    const txt=await r.text();
+    let j=null;
+    try{ j=JSON.parse(txt); }
+    catch(e){
+      netErr=(txt.indexOf('accounts.google')>=0||txt.indexOf('<html')>=0)
+        ? '收到的是 Google 登入頁，不是資料。Apps Script 部署的「誰可以存取」要選「任何人」。'
+        : '回應格式看不懂：'+txt.slice(0,80);
+      return;
+    }
+    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; netErr=''; normSb(); }
+    else netErr='後端回報失敗：'+((j&&j.error)||'未知');
+  }catch(e){
+    online=false;
+    netErr='連不到伺服器（可能被瀏覽器擋下或網路不通）：'+((e&&e.message)||e);
+  }
 }
 function normSb(){
   // sb 由後端提供；若為舊紀錄（盒數曾夾在補充欄），在此還原
@@ -466,8 +480,12 @@ function go(){ render(); window.scrollTo(0,0); }
 
 function offBanner(){
   return online||loading?'':`<div class="wrap"><div class="offbar">
-    <b>連線中斷</b>現在填的紀錄不會存到，請確認網路後重新整理。</div></div>`;
+    <b>連線中斷</b>現在填的紀錄不會存到，請確認網路後重新整理。
+    <button id="why" style="margin-top:6px;padding:5px 11px;border:1px solid #D8A48A;
+      background:#fff;color:#8A4B2A;border-radius:99px;font:inherit;font-size:11.5px">
+      看原因</button></div></div>`;
 }
+function bindWhy(){ const b=$('#why'); if(b) b.onclick=()=>alert(netErr||'沒有取得錯誤訊息'); }
 function bar(title,sub){
   return `<header><div class="wrap"><div class="hrow">
     <div class="brand"><img src="${MARK}" alt="">${title}</div>
@@ -483,7 +501,7 @@ function peekBar(label){
 function bindPeek(){
   const b=$('#peekback'); if(b) b.onclick=()=>{ peek=null; tab='view'; render(); window.scrollTo(0,0); };
 }
-function bindSw(){ const b=$('#sw'); if(!b) return;
+function bindSw(){ bindWhy(); const b=$('#sw'); if(!b) return;
   const e=b.querySelector('b');
   // 只有「團隊長同時也是上線」的四位，可以在自己的兩個身分之間切換
   if(!peek&&role&&role.type==='leader'&&DUAL_UP[role.team]){
