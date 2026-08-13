@@ -288,7 +288,7 @@ let seen={}, showIntro=false;
 let peek=null; // 經銷部借看團隊長/上線視角，僅供檢視
 
 /* ---------- 資料存取：Google 試算表 ---------- */
-let netErr='';
+let netErr='', reviving=false;
 async function load(){
   try{
     const r=await fetch(API+'?t='+Date.now(),{method:'GET'});
@@ -480,7 +480,7 @@ function go(){ render(); window.scrollTo(0,0); }
 
 function offBanner(){
   return online||loading?'':`<div class="wrap"><div class="offbar">
-    <b>連線中斷</b>現在填的紀錄不會存到，請確認網路後重新整理。
+    <b>連線中斷</b>現在填的紀錄不會存到。系統會自動重試，也可以下拉重新整理。
     <button id="why" style="margin-top:6px;padding:5px 11px;border:1px solid #D8A48A;
       background:#fff;color:#8A4B2A;border-radius:99px;font:inherit;font-size:11.5px">
       看原因</button></div></div>`;
@@ -1004,7 +1004,7 @@ function drawSheet(){
       ${draft.block==='other'||draft.note?`<div class="fld"><label class="lb" for="nt">補充</label>
         <input id="nt" value="${esc(draft.note||'')}" placeholder="一句話就好"></div>`:''}
       ${online?'':`<div class="offwarn"><b>連線中斷，現在填不會存到</b>
-        請關掉這個頁面，確認網路後重新開一次再填。現在填的內容會消失。</div>`}
+        先不要填。回到上一頁等幾秒，或下拉重新整理，連上之後再填。</div>`}
       <button class="save" id="sv" ${(ready&&online)?'':'disabled'}>${!online?'連線中斷，暫時無法記錄':(ready?'記錄':'請選擇回應與卡點')}</button>
       <button class="skip" id="cl">取消</button>
     </div>`;
@@ -1024,7 +1024,12 @@ function drawSheet(){
     const rec={d:draft.d,reply:draft.reply,amt:Number(draft.amt)||0,
       sb:Number(draft.sb)||0,block:draft.block,note:draft.note||'',ts:Date.now()};
     try{ await push(m,rec); logs[m.u+'|'+m.n]=rec; closeSheet(); render(); toast('已記錄 '+m.n); }
-    catch(err){ btn.disabled=false; btn.textContent='重試'; toast('沒有存到，請確認網路後重試'); }};
+    catch(err){
+      try{ await new Promise(r=>setTimeout(r,1500)); await push(m,rec);
+        logs[m.u+'|'+m.n]=rec; closeSheet(); render(); toast('已記錄 '+m.n); return; }
+      catch(e2){}
+      btn.disabled=false; btn.textContent='再試一次';
+      toast('沒有存到，等一下再按一次就好'); }};
   function keep(){const a=$('#am'),n=$('#nt'),d=$('#dt'),s=$('#sbx');
     if(a)draft.amt=a.value; if(n)draft.note=n.value; if(d)draft.d=d.value;
     if(s)draft.sb=s.value;}
@@ -1062,8 +1067,28 @@ function boot(){
     if(role.type==='leader'){tab='self';} if(role.type==='dept'){tab='rank';}
   }
   render();
-  Promise.all([load(),loadSeen(),loadProj()]).then(()=>{ loading=false; render();
+  Promise.all([loadRetry(),loadSeen(),loadProj()]).then(()=>{ loading=false; render();
     if(!online) toast('連不上資料庫，現在填不會存到'); });
+  // 從背景切回前景、或網路恢復時，自動重抓一次
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) revive(); });
+  window.addEventListener('online',revive);
+  window.addEventListener('focus',revive);
+}
+async function loadRetry(){
+  const waits=[0,1500,4000];
+  for(let i=0;i<waits.length;i++){
+    if(waits[i]) await new Promise(r=>setTimeout(r,waits[i]));
+    await load();
+    if(online) return;
+  }
+}
+async function revive(){
+  if(online||reviving||loading) return;
+  reviving=true;
+  try{
+    await load();
+    if(online){ render(); toast('連線已恢復'); }
+  } finally { reviving=false; }
 }
 boot();
 </script>
