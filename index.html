@@ -9,7 +9,6 @@
 <meta name="theme-color" content="#FAF7F0">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
-<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -224,6 +223,13 @@ button.denom.sbjump:active{transform:scale(.99)}
 .sect2{font-family:var(--serif);font-size:11.5px;letter-spacing:.16em;color:var(--gold);
   margin:26px 0 10px;font-weight:700}
 .login .sect2:first-of-type{margin-top:4px}
+.lockbox{margin-top:20px;padding:15px 16px;background:var(--tint);border:1px solid var(--line);
+  border-radius:10px;font-size:12.5px;line-height:1.95;color:#5C5348}
+.lockbox b{display:block;margin-bottom:6px;color:var(--gold);font-size:13px}
+.lsearch{margin:12px 0 2px}
+.lsearch input{width:100%;padding:10px 12px;font:inherit;font-size:14px;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:9px;outline:none;-webkit-appearance:none}
+.lsearch input:focus{border-color:var(--gold)}
 .batchnote{font-size:12px;color:var(--mute);line-height:1.75;padding:16px 14px;margin:4px 0 2px;
   background:var(--tint);border-radius:9px;border-left:2px solid var(--gold-soft)}
 .reread{display:block;width:100%;padding:15px;font-size:12px;color:var(--mute);
@@ -269,6 +275,7 @@ let logs={}; let online=false; let batch=15;
 let role=null;              // {type:'upline',name} | {type:'leader',team} | {type:'dept'}
 let filter='todo', tab='rank', dfilter='all';
 let editing=null, draft={}, showAll=false;
+let lfilter='all', lq='';
 let seen={}, showIntro=false;
 let peek=null; // 經銷部借看團隊長/上線視角，僅供檢視
 
@@ -384,7 +391,7 @@ function delta(now,was){
 }
 
 /* ---------- render ---------- */
-function render(){ if(!role) return renderLogin();
+function render(){ if(!role) return renderLocked();
   if(peek){
     if(peek.type==='leader') return renderLeader(true);
     if(peek.type==='upline') return renderUpline(true);
@@ -396,6 +403,32 @@ function render(){ if(!role) return renderLogin();
   if(role.type==='leader') return renderLeader();
   renderDept(); }
 
+function renderLocked(){
+  $('#app').innerHTML=`
+  <div class="wrap login">
+    <img class="lmark" src="${MARK}" alt="">
+    <h1>茉本喚醒追蹤</h1>
+    <p>這個頁面需要你的專屬連結才能開啟。</p>
+    <div class="lockbox">
+      <b>請使用經銷部個別傳給你的網址</b>
+      每個人的連結只會看到自己負責的範圍。<br>
+      不要從群組、截圖或別人的畫面複製網址——那會開不起來。
+    </div>
+    <div class="lsearch" style="margin-top:14px">
+      <input id="tk" type="text" inputmode="latin" autocapitalize="off" autocorrect="off"
+        placeholder="或直接輸入你的 5 碼代碼">
+    </div>
+    <button class="more" id="tkgo" style="margin-top:8px">開啟</button>
+    <p class="note" style="margin-top:14px">代碼在經銷部給你的訊息裡，是網址最後面 <b>u=</b> 後面那五個字。<br>
+      找不到就跟經銷部要一次，不要用別人的。</p>
+  </div>`;
+  const go2=()=>{const v=($('#tk').value||'').trim().toLowerCase().replace(/^.*u=/,'');
+    if(TOKENS[v]){ try{localStorage.setItem(TKEY,v);}catch(e){}
+      location.search='?u='+v; }
+    else toast('這個代碼不對，跟經銷部確認一次');};
+  $('#tkgo').onclick=go2;
+  $('#tk').onkeydown=e=>{if(e.key==='Enter')go2();};
+}
 function renderLogin(){
   const ups=showAll?DATA.uplines:DATA.uplines.slice(0,8);
   $('#app').innerHTML=`
@@ -439,9 +472,8 @@ function bindPeek(){
   const b=$('#peekback'); if(b) b.onclick=()=>{ peek=null; tab='view'; render(); window.scrollTo(0,0); };
 }
 function bindSw(){ const b=$('#sw'); if(!b) return;
-  if(new URLSearchParams(location.search).get('u')){ b.querySelector('b').textContent='';
-    b.style.pointerEvents='none'; return; }
-  b.onclick=()=>{role=null;showAll=false;go()}; }
+  const e=b.querySelector('b'); if(e) e.textContent='';
+  b.style.pointerEvents='none'; }
 
 
 /* ===== 首次開啟說明 ===== */
@@ -518,7 +550,7 @@ function renderLeader(isPeek){
   const T=ctx.team, info=DATA.teams[T], ms=teamOf(T), s=stat(ms);
   const tw=statWk(ms,curWk()), lw=statWk(ms,prevWk());
   const pct=info.cover?s.con/info.cover*100:0;
-  const TAB=[['self','本週進度'],['detail','明細'],['block','卡點']];
+  const TAB=[['self','本週進度'],['list','名單'],['detail','明細'],['block','卡點']];
   $('#app').innerHTML=bar(T+' TEAM',esc(T)+' 團隊長')+
     (isPeek?peekBar('團隊長視角：'+T):'')+`
   <div class="wrap">
@@ -530,6 +562,7 @@ function renderLeader(isPeek){
     <div class="denom">累計已接觸 ${s.con} / 可覆蓋 ${info.cover} 人　·　名單共 ${info.list} 人　·　${curWk()}</div></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
     ${tab==='self'?selfBlock(T,s,tw,lw,info)
+     :tab==='list'?listBlock(T,isPeek)
      :tab==='detail'?detailBlock(ms,'leader')
      :blockBlock(ms)}
   </div>`;
@@ -537,6 +570,40 @@ function renderLeader(isPeek){
   if(isPeek) bindPeek();
   document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
   bindDetail();
+  if(tab==='list') bindList(isPeek);
+}
+function listBlock(T,isPeek){
+  const ms=teamOf(T);
+  const F=[['all','全部 '+ms.length],
+           ['todo','未接觸 '+ms.filter(m=>stateOf(m)==='todo').length],
+           ['sb','已給 SB '+ms.filter(m=>logOf(m).sb>0).length]];
+  const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?logOf(m).sb>0:stateOf(m)==='todo');
+  return `<div class="lsearch"><input id="lq" type="search" placeholder="搜尋姓名或上線" value="${esc(lq)}"></div>
+  <div class="filters">${F.map(([k,t])=>`<button class="fc" data-lf="${k}" aria-pressed="${lfilter===k}">${t}</button>`).join('')}</div>
+  <div class="list" id="llist">${show.length?show.map(cardL).join(''):`<div class="empty">沒有符合的人。</div>`}</div>
+  <p class="note">${isPeek?'借看視角，不能代填。':'你發了 SB 就點進那個人填盒數。這裡記的內容和該位上線看到的是同一筆，不會分開。'}</p>`;
+}
+function cardL(m){
+  const st=stateOf(m),[lbl,cls]=STATE[st],l=logOf(m),[tag,line]=hookOf(m);
+  const cc=st==='intent'?'intent':st==='blocked'?'blocked':(st!=='todo'?'done':'');
+  return `<button class="mc ${cc}" data-n="${esc(m.n)}" data-k="${esc(m.n+' '+(m.u||''))}">
+    <div class="mrow"><span class="mname">${esc(m.n)}</span>
+      <span class="tag ${m.g}">${m.g}</span>
+      <span class="mstate ${cls}">${lbl}${l&&l.amt?'　'+wan(l.amt)+'萬':''}</span></div>
+    <div class="mmeta">上線 ${esc(m.u||'—')}　·　最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}${l&&l.sb?`　·　已給 SB ${l.sb} 盒`:''}</div>
+    ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
+      :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
+  </button>`;
+}
+function bindList(isPeek){
+  document.querySelectorAll('[data-lf]').forEach(b=>b.onclick=()=>{lfilter=b.dataset.lf;render()});
+  if(!isPeek) document.querySelectorAll('#llist .mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+  const qi=$('#lq'); if(!qi) return;
+  const apply=()=>{const k=lq.trim();
+    document.querySelectorAll('#llist .mc').forEach(c=>{
+      c.style.display=(!k||c.dataset.k.indexOf(k)>=0)?'':'none';});};
+  qi.oninput=()=>{lq=qi.value;apply();};
+  if(lq) apply();
 }
 function selfBlock(T,s,tw,lw,info){
   const ms=teamOf(T);
@@ -862,7 +929,7 @@ function doExport(){
 
 /* ===== 記錄表單 ===== */
 function openSheet(name){
-  editing=mine().find(m=>m.n===name);
+  editing=(role&&role.type==='leader'?teamOf(role.team):mine()).find(m=>m.n===name);
   const l=logOf(editing);
   draft=l?{...l,sb:l.sb||''}:{d:today(),reply:null,amt:'',sb:'',block:null,note:''};
   drawSheet(); $('#scrim').classList.add('on'); $('#sheet').classList.add('on');
@@ -922,8 +989,26 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
 let loading=true;
 let proj={};   // 專案二三狀態
 let perf=[];   // 業績（試算表「業績」工作表）
+const TKEY='morebeaut-wake-token';
+function readToken(){
+  // 1) ?u=xxx
+  let q=new URLSearchParams(location.search).get('u');
+  // 2) #u=xxx 或 #xxx（GitHub Pages 重導會吃掉 ?，但不會吃掉 #）
+  if(!q&&location.hash){
+    const h=location.hash.replace(/^#/,'');
+    q=h.indexOf('u=')===0?h.slice(2):h;
+  }
+  if(q&&TOKENS[q]){
+    try{localStorage.setItem(TKEY,q);}catch(e){}
+    return q;
+  }
+  // 3) 這台裝置上次成功開啟的代碼（網址被重導洗掉時的救援）
+  try{const s=localStorage.getItem(TKEY); if(s&&TOKENS[s]) return s;}catch(e){}
+  return null;
+}
+function hasToken(){return !!readToken();}
 function boot(){
-  const q=new URLSearchParams(location.search).get('u');
+  const q=readToken();
   if(q&&TOKENS[q]){
     const v=TOKENS[q];
     role = v.type==='upline'?{type:'upline',name:v.name}
