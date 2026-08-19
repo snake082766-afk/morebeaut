@@ -302,7 +302,7 @@ async function load(){
         : '回應格式看不懂：'+txt.slice(0,80);
       return;
     }
-    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; netErr=''; normSb(); }
+    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; netErr=''; normSb(); applyPending(); }
     else netErr='後端回報失敗：'+((j&&j.error)||'未知');
   }catch(e){
     online=false;
@@ -325,13 +325,40 @@ async function loadProj(){ try{const r=await window.storage.get(PKEY,true);
 async function saveProj(){ try{await window.storage.set(PKEY,JSON.stringify(proj),true);}catch(e){} }
 async function loadSeen(){ try{const r=await window.storage.get(SEEN,true);
   if(r&&r.value) seen=JSON.parse(r.value);}catch(e){} }
-async function push(m,rec){
-  const body={key:m.u+'|'+m.n,team:m.t,upline:m.u,member:m.n,group:m.g+'｜'+m.gn,
+function bodyOf(m,rec){
+  return {key:m.u+'|'+m.n,team:m.t,upline:m.u,member:m.n,group:m.g+'｜'+m.gn,
     d:rec.d,reply:rec.reply,amt:rec.amt,sb:rec.sb||0,block:rec.block,
     blockLabel:BMAP[rec.block]||'',note:rec.note,ts:rec.ts};
-  const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});
-  const j=await r.json();
-  if(!j||!j.ok) throw new Error('write failed');
+}
+async function sendBody(body,ms){
+  const ac=new AbortController();
+  const to=setTimeout(()=>ac.abort(),ms||12000);
+  try{
+    const r=await fetch(API,{method:'POST',body:JSON.stringify(body),signal:ac.signal});
+    const j=await r.json();
+    if(!j||!j.ok) throw new Error('write failed');
+  } finally { clearTimeout(to); }
+}
+async function push(m,rec){ await sendBody(bodyOf(m,rec)); }
+
+/* ---------- 待送佇列：填完先存在這台裝置，連上了再自動補送 ---------- */
+const QKEY='morebeaut-wake-pending';
+let pending={};
+function loadPending(){ try{pending=JSON.parse(localStorage.getItem(QKEY)||'{}')||{};}catch(e){pending={};} }
+function savePending(){ try{localStorage.setItem(QKEY,JSON.stringify(pending));}catch(e){} }
+function applyPending(){ Object.keys(pending).forEach(k=>{ logs[k]=pending[k].rec; }); }
+function pendCount(){ return Object.keys(pending).length; }
+let flushing=false;
+async function flush(silent){
+  if(flushing||!pendCount()) return;
+  flushing=true;
+  try{
+    for(const k of Object.keys(pending)){
+      try{ await sendBody(pending[k].body); delete pending[k]; savePending(); }
+      catch(e){ break; }
+    }
+    if(!pendCount()&&!silent) toast('先前沒送出的紀錄已經補上了');
+  } finally { flushing=false; }
 }
 const $=s=>document.querySelector(s);
 let tt; function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');
@@ -479,13 +506,25 @@ function renderLogin(){
 function go(){ render(); window.scrollTo(0,0); }
 
 function offBanner(){
-  return online||loading?'':`<div class="wrap"><div class="offbar">
-    <b>連線中斷</b>現在填的紀錄不會存到。系統會自動重試，也可以下拉重新整理。
+  if(loading) return '';
+  const n=pendCount();
+  if(n) return `<div class="wrap"><div class="offbar">
+    <b>有 ${n} 筆還沒送出</b>已經存在這支手機裡，不會不見。連上網路會自動補送，也可以按下面這顆。
+    <button id="reflush" style="margin-top:6px;padding:5px 11px;border:1px solid #D8A48A;
+      background:#fff;color:#8A4B2A;border-radius:99px;font:inherit;font-size:11.5px">
+      立即補送</button></div></div>`;
+  return online?'':`<div class="wrap"><div class="offbar">
+    <b>連線中斷</b>還是可以填，內容會先存在手機裡，連上網之後自動補送。
     <button id="why" style="margin-top:6px;padding:5px 11px;border:1px solid #D8A48A;
       background:#fff;color:#8A4B2A;border-radius:99px;font:inherit;font-size:11.5px">
       看原因</button></div></div>`;
 }
-function bindWhy(){ const b=$('#why'); if(b) b.onclick=()=>alert(netErr||'沒有取得錯誤訊息'); }
+function bindWhy(){
+  const b=$('#why'); if(b) b.onclick=()=>alert(netErr||'沒有取得錯誤訊息');
+  const f=$('#reflush'); if(f) f.onclick=async()=>{ f.textContent='補送中…';
+    await load(); await flush(); render();
+    if(pendCount()) toast('還是送不出去，等網路好一點再按一次'); };
+}
 function bar(title,sub){
   return `<header><div class="wrap"><div class="hrow">
     <div class="brand"><img src="${MARK}" alt="">${title}</div>
@@ -1003,9 +1042,9 @@ function drawSheet(){
           <span class="dot"></span><span>${b.t}<em>${b.d}</em></span></button>`).join('')}</div></div>
       ${draft.block==='other'||draft.note?`<div class="fld"><label class="lb" for="nt">補充</label>
         <input id="nt" value="${esc(draft.note||'')}" placeholder="一句話就好"></div>`:''}
-      ${online?'':`<div class="offwarn"><b>連線中斷，現在填不會存到</b>
-        先不要填。回到上一頁等幾秒，或下拉重新整理，連上之後再填。</div>`}
-      <button class="save" id="sv" ${(ready&&online)?'':'disabled'}>${!online?'連線中斷，暫時無法記錄':(ready?'記錄':'請選擇回應與卡點')}</button>
+      ${online?'':`<div class="offwarn"><b>目前連線不穩，但可以照常填</b>
+        填完按記錄，內容會先存在這支手機裡，連上網路自動補送，不會不見。</div>`}
+      <button class="save" id="sv" ${ready?'':'disabled'}>${ready?'記錄':'請選擇回應與卡點'}</button>
       <button class="skip" id="cl">取消</button>
     </div>`;
   $('#dt').onchange=e=>draft.d=e.target.value;
@@ -1023,13 +1062,20 @@ function drawSheet(){
     const btn=$('#sv'); btn.disabled=true; btn.textContent='儲存中…';
     const rec={d:draft.d,reply:draft.reply,amt:Number(draft.amt)||0,
       sb:Number(draft.sb)||0,block:draft.block,note:draft.note||'',ts:Date.now()};
-    try{ await push(m,rec); logs[m.u+'|'+m.n]=rec; closeSheet(); render(); toast('已記錄 '+m.n); }
-    catch(err){
-      try{ await new Promise(r=>setTimeout(r,1500)); await push(m,rec);
-        logs[m.u+'|'+m.n]=rec; closeSheet(); render(); toast('已記錄 '+m.n); return; }
-      catch(e2){}
-      btn.disabled=false; btn.textContent='再試一次';
-      toast('沒有存到，等一下再按一次就好'); }};
+    const key=m.u+'|'+m.n;
+    // 先寫進這台裝置：即使現在送不出去、或使用者直接關掉，資料都不會不見
+    pending[key]={body:bodyOf(m,rec),rec:rec,ts:rec.ts};
+    savePending();
+    logs[key]=rec;
+    closeSheet(); render();
+    try{
+      await sendBody(pending[key].body);
+      delete pending[key]; savePending(); render();
+      toast('已記錄 '+m.n);
+    }catch(err){
+      render();
+      toast('已存在手機裡，連上網會自動補送');
+    }};
   function keep(){const a=$('#am'),n=$('#nt'),d=$('#dt'),s=$('#sbx');
     if(a)draft.amt=a.value; if(n)draft.note=n.value; if(d)draft.d=d.value;
     if(s)draft.sb=s.value;}
@@ -1066,9 +1112,12 @@ function boot(){
          : v.type==='leader'?{type:'leader',team:v.team}:{type:'dept'};
     if(role.type==='leader'){tab='self';} if(role.type==='dept'){tab='rank';}
   }
+  loadPending();
   render();
-  Promise.all([loadRetry(),loadSeen(),loadProj()]).then(()=>{ loading=false; render();
-    if(!online) toast('連不上資料庫，現在填不會存到'); });
+  Promise.all([loadRetry(),loadSeen(),loadProj()]).then(async()=>{ loading=false;
+    applyPending(); render();
+    if(online){ await flush(); render(); }
+    else toast('連不上資料庫，填的內容會先存在手機裡'); });
   // 從背景切回前景、或網路恢復時，自動重抓一次
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) revive(); });
   window.addEventListener('online',revive);
@@ -1087,7 +1136,7 @@ async function revive(){
   reviving=true;
   try{
     await load();
-    if(online){ render(); toast('連線已恢復'); }
+    if(online){ await flush(); render(); toast('連線已恢復'); }
   } finally { reviving=false; }
 }
 boot();
