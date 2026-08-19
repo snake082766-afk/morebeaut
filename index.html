@@ -78,6 +78,9 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
   border-left:3px solid var(--line);border-radius:10px;padding:14px 15px;margin-bottom:10px;transition:.18s;
   box-shadow:0 1px 2px rgba(43,39,33,.04)}
 .mc:active{transform:scale(.988)}
+.list.pending .mc{opacity:.55}
+.loadbar{margin:10px 0 2px;padding:9px 12px;background:var(--tint);border:1px solid var(--line);
+  border-radius:9px;font-size:12px;color:#6B6459;line-height:1.7}
 .mc.done{border-left-color:var(--ok)}
 .mc.blocked{border-left-color:var(--stop)}
 .mc.intent{border-left-color:var(--gold)}
@@ -639,7 +642,8 @@ function renderUpline(isPeek){
       ${ladderLine(wakeOrdP(ms),wakeDenP(ms),ms.some(m=>m.asg))}
       ${loading?`<div class="loading">讀取紀錄中…</div>`:''}</div>
     <div class="filters">${F.map(([k,t])=>`<button class="fc" data-f="${k}" aria-pressed="${filter===k}">${t}</button>`).join('')}</div>
-    <div class="list">${show.length?show.map(card).join('')
+    ${loading?`<div class="loadbar">紀錄讀取中，先不要填 — 避免蓋掉先前填過的內容。約需 2–5 秒。</div>`:''}
+    <div class="list${loading?' pending':''}">${show.length?show.map(card).join('')
       :`<div class="empty">這一組都記過了。<br>切到「全部」可以修改先前的紀錄。</div>`}
       ${hidden?`<div class="batchnote">先跑這 ${batch} 位。記完之後，下一批 ${hidden} 位會自動出現。<br>
         一次面對太多人反而會停在第五個。</div>`:''}
@@ -701,7 +705,8 @@ function listBlock(T,isPeek){
   const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?logOf(m).sb>0:stateOf(m)==='todo');
   return `<div class="lsearch"><input id="lq" type="search" placeholder="搜尋姓名或上線" value="${esc(lq)}"></div>
   <div class="filters">${F.map(([k,t])=>`<button class="fc" data-lf="${k}" aria-pressed="${lfilter===k}">${t}</button>`).join('')}</div>
-  <div class="list" id="llist">${show.length?show.map(cardL).join(''):`<div class="empty">沒有符合的人。</div>`}</div>
+  ${loading?`<div class="loadbar">紀錄讀取中，先不要填 — 避免蓋掉先前填過的內容。約需 2–5 秒。</div>`:''}
+  <div class="list${loading?' pending':''}" id="llist">${show.length?show.map(cardL).join(''):`<div class="empty">沒有符合的人。</div>`}</div>
   <p class="note">${isPeek?'借看視角，不能代填。'
     :'你發了 SB 就點進那個人填盒數。這裡記的內容和該位上線看到的是同一筆，不會分開。'
       +(DUAL_UP[T]?'<br>你自己名下的名單在右上角「切到我的名單」，兩邊的紀錄是相通的。':'')}</p>`;
@@ -1119,6 +1124,7 @@ function doExport(){
 
 /* ===== 記錄表單 ===== */
 function openSheet(name){
+  if(loading){ toast('紀錄還在讀取，等一下再填，才不會蓋掉先前填過的'); return; }
   editing=(role&&role.type==='leader'?teamOf(role.team):mine()).find(m=>m.n===name);
   const l=logOf(editing);
   draft=l?{...l,sb:l.sb||'',ord:(l.ord===true||l.ord===false?l.ord:(l.amt>0?true:null))}
