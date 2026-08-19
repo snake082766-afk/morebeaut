@@ -321,7 +321,7 @@ function normOrd(){
     const v=l.ord;
     l.ord = (v===1||v===true||v==='1'||v==='TRUE'||v==='是') ? true
           : (v===0||v===false||v==='0'||v==='FALSE'||v==='否') ? false
-          : (Number(l.amt)>0);});
+          : false;});
 }
 function normSb(){
   // sb 由後端提供；若為舊紀錄（盒數曾夾在補充欄），在此還原
@@ -459,7 +459,7 @@ function stateOf(m){
   return 'contacted';
 }
 const STATE={todo:['未接觸',''],contacted:['已接觸',''],replied:['有回應','ok'],
-             ordered:['已下單','gold'],intent:['有意向','gold'],blocked:['有卡點','stop']};
+             ordered:['已下單','gold'],intent:['已下單','gold'],blocked:['有卡點','stop']};
 function hookOf(m){
   if(m.g==='A') return ['檔期主力','確認這一檔的規格與金額，不用重新說明品牌。'];
   if(m.g==='B') return ['手上可能還有貨','<b>不是要他再進貨</b>，是 SB 幫他把上次那批賣動。'];
@@ -477,6 +477,10 @@ function stat(ms){
     sbi:ps.filter(([m,l])=>l.sb>0&&l.ord&&WAKE(m)).length};
 }
 const wan=v=>v?(v/10000).toLocaleString('zh-TW',{minimumFractionDigits:1,maximumFractionDigits:1}):'0.0';
+// 金額顯示：未滿一萬用「元」，滿一萬才折成「萬」
+const money=v=>!v?'—':(v<10000?Math.round(v).toLocaleString('zh-TW')+' 元':wan(v)+' 萬');
+const moneyN=v=>!v?'0':(v<10000?Math.round(v).toLocaleString('zh-TW'):wan(v));
+const moneyU=v=>(!v||v<10000)?'元':'萬';
 function delta(now,was){
   if(was==null) return '';
   const d=now-was;
@@ -668,7 +672,7 @@ function card(m){
   return `<button class="mc ${cc}" data-n="${esc(m.n)}">
     <div class="mrow"><span class="mname">${esc(m.n)}</span>
       <span class="tag ${m.g}">${m.g}</span>
-      <span class="mstate ${cls}">${lbl}${l&&l.amt?'　'+wan(l.amt)+'萬':''}</span></div>
+      <span class="mstate ${cls}">${lbl}${l&&l.ord&&l.amt?'　'+money(l.amt):''}</span></div>
     <div class="mmeta">最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}${l&&l.sb?`　·　已給 SB ${l.sb} 盒`:''}${m.asg?`　·　原上線 ${esc(m.ou)}（已沉睡）`:''}</div>
     ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
       :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
@@ -689,7 +693,7 @@ function renderLeader(isPeek){
     <div class="prog"><div class="pnums">
       <div class="pn"><i>${tw.con}</i><s>本週接觸 ${delta(tw.con,lw.con)}</s></div>
       <div class="pn"><i>${tw.rep}</i><s>本週回應 ${delta(tw.rep,lw.rep)}</s></div>
-      <div class="pn"><i>${wan(tw.amt)}</i><s>本週意向萬</s></div>
+      <div class="pn"><i>${moneyN(tw.amt)}</i><s>本週下單${moneyU(tw.amt)}</s></div>
     </div><div class="bar"><div style="width:${pct}%"></div></div>
     <div class="denom">累計已接觸 ${s.con} / 可覆蓋 ${info.cover} 人　·　名單共 ${info.list} 人　·　${curWk()}</div></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
@@ -725,7 +729,7 @@ function cardL(m){
   return `<button class="mc ${cc}" data-n="${esc(m.n)}" data-k="${esc(m.n+' '+(m.u||''))}">
     <div class="mrow"><span class="mname">${esc(m.n)}</span>
       <span class="tag ${m.g}">${m.g}</span>
-      <span class="mstate ${cls}">${lbl}${l&&l.amt?'　'+wan(l.amt)+'萬':''}</span></div>
+      <span class="mstate ${cls}">${lbl}${l&&l.ord&&l.amt?'　'+money(l.amt):''}</span></div>
     <div class="mmeta">${m.asg?'指派接手　·　原上線 '+esc(m.ou):'上線 '+esc(m.u||'—')}　·　最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}${l&&l.sb?`　·　已給 SB ${l.sb} 盒`:''}</div>
     ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
       :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
@@ -750,13 +754,14 @@ function selfBlock(T,s,tw,lw,info){
   <table class="tt"><thead><tr><th></th><th>上週</th><th>本週</th></tr></thead><tbody>
     <tr><td>接觸</td><td>${lw.con||'—'}</td><td class="g">${tw.con}</td></tr>
     <tr><td>有回應</td><td>${lw.rep||'—'}</td><td class="g">${tw.rep}</td></tr>
-    <tr><td>意向（萬）</td><td>${lw.amt?wan(lw.amt):'—'}</td><td class="g">${wan(tw.amt)}</td></tr>
+    <tr><td>下單金額</td><td>${money(lw.amt)}</td><td class="g">${money(tw.amt)}</td></tr>
     <tr><td>SB（盒）</td><td>${lw.sb||'—'}</td><td class="g">${tw.sb||0}</td></tr>
   </tbody></table>
-  <button class="denom sbjump" id="sbjump">SB 累計已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已有意向　·　看名單 ›</button>
-  <div class="sect">你隊上線的進度　·　由低到高</div>
-  ${byUp.map(x=>`<div class="bl"><i>${x.con}/${x.total}</i><span>${esc(x.u.n)}</span>
-    <s>${x.amt?wan(x.amt)+'萬':'—'}</s></div>`).join('')}
+  <button class="denom sbjump" id="sbjump">SB 累計已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已下單　·　看名單 ›</button>
+  <div class="sect">你隊上線的進度　·　接觸數由低到高</div>
+  ${byUp.map(x=>{const ums=DATA.members.filter(q=>q.u===x.u.n);
+    return `<div class="bl"><i>${x.con}/${x.total}</i><span>${esc(x.u.n)}</span>
+    <s>喚醒 ${wakeOrd(ums)}／${wakeDen(ums)}</s></div>`;}).join('')}
   <p class="note">比較對象是自己的上週，不是別隊。四隊名單規模與活躍上線數差異很大，橫向比不具意義。<br>
   分母用「可覆蓋人數」，因為沉睡上線那幾條線不在你這一層處理。</p>`;
 }
@@ -775,10 +780,10 @@ function renderDept(){
     <div class="prog"><div class="pnums">
       <div class="pn"><i>${s.con}</i><s>已接觸 / 317</s></div>
       <div class="pn"><i>${s.rep}</i><s>有回應</s></div>
-      <div class="pn"><i>${wan(s.amt)}</i><s>意向萬元</s></div>
+      <div class="pn"><i>${moneyN(s.amt)}</i><s>下單金額${moneyU(s.amt)}</s></div>
     </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
     <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div>
-    <button class="denom sbjump" id="sbjump">SB 已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已有意向${s.sbn?`（${Math.round(s.sbi/s.sbn*100)}%）`:''}　·　看名單 ›</button></div>
+    <button class="denom sbjump" id="sbjump">SB 已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已下單${s.sbn?`（${Math.round(s.sbi/s.sbn*100)}%）`:''}　·　看名單 ›</button></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
     ${tab==='wr'?wrBlock()
      :tab==='perf'?perfBlock()
@@ -899,7 +904,7 @@ function wrBlock(){
     <tr><td>前提不成立則調整為</td><td class="g">${pn.alt?wan(pn.alt)+' 萬':'—'}</td></tr>
   </tbody></table>
   <p class="note">承接自本月：${pc?`未達 ${wan(Math.max(pc.goal-pc.rev,0))} 萬`:'—'}
-  　意向未轉單 ${wan(stat(DATA.members).amt)} 萬</p>`
+  　下單金額 ${money(stat(DATA.members).amt)}</p>`
   :`<p class="note">試算表「業績」工作表尚無 ${ymNext()} 這一列。<br>
     請填入月份、目標、達成前提、前提不成立則調整為。</p>`}`:''}
 
@@ -927,7 +932,7 @@ function perfBlock(){
   <table class="tt"><tbody>
     <tr><td>缺口</td><td class="g">${wan(Math.max(p.goal-p.rev,0))} 萬</td></tr>
     <tr><td>人均（本月）</td><td>${p.act?wan(p.rev/p.act):'—'} 萬</td></tr>
-    <tr><td>喚醒意向合計</td><td class="g">${wan(stat(DATA.members).amt)} 萬</td></tr>
+    <tr><td>喚醒下單金額</td><td class="g">${money(stat(DATA.members).amt)}</td></tr>
   </tbody></table>
   <div class="sect">喚醒成效　·　442 人名單</div>
   ${p.wake ? `
@@ -1004,12 +1009,12 @@ function perfLine(){
   if(!p) return '';
   const share=p.goal?amt/p.goal*100:0;
   return `<div class="prog" style="padding-top:14px"><div class="pnums">
-    <div class="pn"><i>${wan(amt)}</i><s>喚醒意向萬</s></div>
+    <div class="pn"><i>${moneyN(amt)}</i><s>下單金額${moneyU(amt)}</s></div>
     <div class="pn"><i>${share.toFixed(1)}<span style="font-size:13px">%</span></i><s>佔月目標</s></div>
     <div class="pn"><i>${wan(Math.max(p.goal-p.rev,0))}</i><s>本月缺口萬</s></div>
   </div>
   <div class="denom">目標 ${wan(p.goal)} 萬　·　累計 ${wan(p.rev)} 萬　·　活躍 ${p.act} 人　·　更新 ${esc(p.upd)||'—'}</div>
-  <div class="denom" style="margin-top:3px">意向是「說要買」，不是已下單。實際下單要從公司後台對。</div></div>`;
+  <div class="denom" style="margin-top:3px">喚醒＝有下單，不看金額。金額為選填，9/30 前要跟公司後台對帳一次。</div></div>`;
 }
 function cupRows(scope){
   const ups=DATA.uplines.filter(u=>!scope||u.t===scope);
@@ -1095,9 +1100,9 @@ function detailBlock(ms,who){
     return `<div class="dc">
       <div class="mrow"><span class="mname">${esc(m.n)}</span>
         <span class="tag ${m.g}">${m.g}</span>
-        <span class="mstate ${l.amt?'gold':(l.reply?'ok':'')}">${l.amt?wan(l.amt)+'萬':(l.reply?'有回應':'無回應')}</span></div>
+        <span class="mstate ${l.ord?'gold':(l.reply?'ok':'')}">${l.ord?('已下單'+(l.amt?' '+money(l.amt):'')):(l.reply?'有回應':'無回應')}</span></div>
       <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${l.d}${who==='dept'?'　·　'+m.t:''}${l.sb?'　·　SB '+l.sb+' 盒':''}</div>
-      ${l.sb?`<div class="hook"><b>SB ${l.sb} 盒</b>　${l.amt?'後續已有意向 '+wan(l.amt)+' 萬':'後續尚無意向'}</div>`:''}
+      ${l.sb?`<div class="hook"><b>SB ${l.sb} 盒</b>　${l.ord?'後續已下單'+(l.amt?' '+money(l.amt):''):'後續尚未下單'}</div>`:''}
       ${l.block&&l.block!=='ok'?`<div class="hook"><b>${esc(BMAP[l.block])}</b>${(l.note||'').trim()?'　'+esc(l.note):'　<span style="color:#A8A093">沒寫備註</span>'}</div>`
         :((l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:'')}
     </div>`}).join(''):`<div class="empty">${dfilter==='sb'?'還沒有人被記錄拿到 SB。':'尚無紀錄。'}</div>`}
@@ -1126,7 +1131,7 @@ function bindDetail(){
 }
 function doExport(){
   const ms=(role.type==='leader'?teamOf(role.team):DATA.members).filter(m=>logOf(m));
-  const rows=[['會員ID','團隊','上線','下線','分組','接觸日','有回應','已下單','金額','SB盒數','卡點','備註']];
+  const rows=[['會員ID','團隊','上線','下線','分組','接觸日','有回應','已下單','下單金額','SB盒數','卡點','備註']];
   ms.forEach(m=>{const l=logOf(m);
     rows.push([m.i||'',m.t,m.u,m.n,m.g+'｜'+m.gn,l.d,l.reply?'有':'無',l.ord?'是':'否',l.amt||0,l.sb||0,BMAP[l.block]||'',l.note||'']);});
   const tsv=rows.map(r=>r.join('\t')).join('\n');
@@ -1165,8 +1170,8 @@ function drawSheet(){
       <div class="fld"><span class="lb">下單了嗎${m.g==='A'?'　·　本筆不算喚醒':'　·　喚醒算不算，看這一格'}</span><div class="seg">
         <button data-o="0" aria-pressed="${draft.ord===false}">還沒下單</button>
         <button data-o="1" aria-pressed="${draft.ord===true}">已經下單</button></div></div>
-      <div class="fld"><label class="lb" for="am">金額（選填，不影響喚醒認定）</label>
-        <input type="number" id="am" inputmode="numeric" placeholder="不填也可以" value="${draft.amt||''}"></div>
+      ${draft.ord===true?`<div class="fld"><label class="lb" for="am">下單金額（選填，不影響喚醒認定）</label>
+        <input type="number" id="am" inputmode="numeric" placeholder="不填也可以" value="${draft.amt||''}"></div>`:''}
       <div class="fld"><label class="lb" for="sbx">給了幾盒 SB（沒給就留空）</label>
         <input type="number" id="sbx" inputmode="numeric" placeholder="0" value="${draft.sb||''}"></div>
       <div class="fld"><span class="lb">卡點　·　必選</span><div class="blocks">${BLOCKS.map(b=>`
@@ -1180,7 +1185,7 @@ function drawSheet(){
       <button class="skip" id="cl">取消</button>
     </div>`;
   $('#dt').onchange=e=>draft.d=e.target.value;
-  $('#am').oninput=e=>draft.amt=e.target.value;
+  const am=$('#am'); if(am) am.oninput=e=>draft.amt=e.target.value;
   const sx=$('#sbx'); if(sx) sx.oninput=e=>draft.sb=e.target.value;
   const nt=$('#nt'); if(nt) nt.oninput=e=>draft.note=e.target.value;
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{draft.reply=b.dataset.r==='1';keep();drawSheet();});
