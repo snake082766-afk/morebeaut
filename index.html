@@ -427,6 +427,10 @@ const keyOf=m=>m.i?('#'+m.i):(m.u+'|'+m.n);
 const logOf=m=>logs[keyOf(m)];
 const mine=()=>DATA.members.filter(m=>m.u===role.name);
 const teamOf=t=>DATA.members.filter(m=>m.t===t);
+/* 喚醒競賽公布開關：正式公布當天改成 true，上線與團隊長才會看到階梯與獎金。
+   關著的時候，經銷部仍看得到「競賽」分頁（標示未公布），方便你自己試算。 */
+const CUP_LIVE = false;
+
 const WAKE=m=>m.g==='B'||m.g==='C'||m.g==='D';
 const OWNLINE=m=>!m.asg;              // 指派接手的人不列入個人階梯
 const wakeDen=ms=>ms.filter(WAKE).length;
@@ -436,6 +440,9 @@ const wakeOrdP=ms=>ms.filter(m=>{const l=logOf(m);return l&&l.ord&&WAKE(m)&&OWNL
 function tier(n){ return n>=10?6000:n>=5?2500:n>=3?1000:0; }
 const nt2=n=>String(n).replace(/\B(?=(\d{3})+$)/g,',');
 function ladderLine(ord,den,hasAsg){
+  if(!CUP_LIVE){
+    return `<div class="denom">喚醒＝B／C／D 三群有下單，不看金額。A 組是鞏固，不算喚醒。${hasAsg?'<br>指派接手的人也算在這裡。':''}</div>`;
+  }
   const now=tier(ord), nx=nextTier(ord);
   const reach=nx&&(ord+nx.need<=den);
   return `<div class="denom">喚醒競賽　·　目前 ${ord} 人${now?`＝ ${nt2(now)} 元`:'（還沒到第一階）'}
@@ -674,7 +681,8 @@ function renderLeader(isPeek){
   const T=ctx.team, info=DATA.teams[T], ms=teamOf(T), s=stat(ms);
   const tw=statWk(ms,curWk()), lw=statWk(ms,prevWk());
   const pct=info.cover?s.con/info.cover*100:0;
-  const TAB=[['self','本週進度'],['cup','競賽'],['list','名單'],['detail','明細'],['block','卡點']];
+  const TAB=[['self','本週進度']].concat(CUP_LIVE?[['cup','競賽']]:[])
+    .concat([['list','名單'],['detail','明細'],['block','卡點']]);
   $('#app').innerHTML=bar(T+' TEAM',esc(T)+' 團隊長')+
     (isPeek?peekBar('團隊長視角：'+T):'')+`
   <div class="wrap">
@@ -760,7 +768,7 @@ function renderDept(){
     const ms2=teamOf(t);
     return {t,info:DATA.teams[t],...stat(ms2),tw:statWk(ms2,curWk())};
   });
-  const TAB=[['rank','喚醒'],['cup','競賽'],['block','卡點'],['detail','明細'],['silent','未動'],['ev','活動'],['view','視角']];
+  const TAB=[['rank','喚醒'],['cup',CUP_LIVE?'競賽':'競賽（未公布）'],['block','卡點'],['detail','明細'],['silent','未動'],['ev','活動'],['view','視角']];
   const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
   $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
   <div class="wrap">
@@ -1025,7 +1033,10 @@ function cupBlock(scope){
   const done=rows.filter(r=>r.ord>0);
   const sum=rows.reduce((s,r)=>s+r.pay,0);
   const budget=100000;
-  return `<div class="sect">喚醒競賽排行　·　只算 B／C／D 有下單</div>
+  return `${CUP_LIVE?'':`<div class="offbar" style="margin:12px 0 4px">
+    <b>尚未對外公布</b>這一頁只有你看得到。上線與團隊長的畫面上沒有任何獎金字樣。<br>
+    公布當天把程式最上面的 CUP_LIVE 改成 true，他們才會看到階梯進度。</div>`}
+  <div class="sect">喚醒競賽排行　·　只算 B／C／D 有下單</div>
   <table class="tt"><thead><tr><th>上線</th>${scope?'':'<th>隊</th>'}<th>喚醒／母數</th><th>試算獎金</th></tr></thead><tbody>
   ${rows.map(r=>`<tr class="${r.ord?'':'blank'}">
     <td>${esc(r.n)}${r.champ?' 👑':(r.top?' ★':'')}</td>
@@ -1145,13 +1156,13 @@ function drawSheet(){
       ${m.g==='A'?`<div class="offwarn" style="background:#F1EFE8;border-color:#D9D2C4;color:#5C5348">
         <b>這位是檔期主力，要鞏固、不算喚醒</b>
         他本來就在買，下單一樣有返利，SB 也可以給他。<br>
-        但這一筆不計入喚醒競賽人數——競賽只算 B／C／D 三群。</div>`:''}
+        ${CUP_LIVE?'但這一筆不計入喚醒競賽人數——競賽只算 B／C／D 三群。':'但這一筆不算喚醒人數——喚醒只算 B／C／D 三群。'}</div>`:''}
       <div class="fld"><label class="lb" for="dt">接觸日期</label>
         <input type="date" id="dt" value="${draft.d}"></div>
       <div class="fld"><span class="lb">對方有回應嗎</span><div class="seg">
         <button data-r="0" aria-pressed="${draft.reply===false}">沒有回應</button>
         <button data-r="1" aria-pressed="${draft.reply===true}">有回應</button></div></div>
-      <div class="fld"><span class="lb">下單了嗎${m.g==='A'?'　·　本筆不計入競賽':'　·　喚醒算不算，看這一格'}</span><div class="seg">
+      <div class="fld"><span class="lb">下單了嗎${m.g==='A'?'　·　本筆不算喚醒':'　·　喚醒算不算，看這一格'}</span><div class="seg">
         <button data-o="0" aria-pressed="${draft.ord===false}">還沒下單</button>
         <button data-o="1" aria-pressed="${draft.ord===true}">已經下單</button></div></div>
       <div class="fld"><label class="lb" for="am">金額（選填，不影響喚醒認定）</label>
