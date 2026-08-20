@@ -319,12 +319,15 @@ async function load(){
         : '回應格式看不懂：'+txt.slice(0,80);
       return;
     }
-    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; netErr=''; normSb(); normOrd(); applyPending(); }
+    if(j&&j.ok){ logs=j.logs||{}; perf=j.perf||[]; online=true; netErr=''; normSb(); normOrd(); normDate(); applyPending(); }
     else netErr='後端回報失敗：'+((j&&j.error)||'未知');
   }catch(e){
     online=false;
     netErr='連不到伺服器（可能被瀏覽器擋下或網路不通）：'+((e&&e.message)||e);
   }
+}
+function normDate(){
+  Object.values(logs).forEach(l=>{ if(l) l.d=dstr(l.d); });
 }
 function normOrd(){
   Object.values(logs).forEach(l=>{ if(!l) return;
@@ -462,6 +465,15 @@ const pOf=m=>perf.find(x=>x.m===m)||null;
 
 /* ---------- helpers ---------- */
 const keyOf=m=>m.i?('#'+m.i):(m.u+'|'+m.n);
+const MON={Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+const dstr=v=>{ if(!v) return '';
+  const s=String(v).trim();
+  let m1=/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(s);
+  if(m1) return m1[1]+'-'+String(m1[2]).padStart(2,'0')+'-'+String(m1[3]).padStart(2,'0');
+  // 「Wed Aug 19 2026 …」：直接取字面，不做時區換算，避免差一天
+  m1=/^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/.exec(s);
+  if(m1&&MON[m1[1]]) return m1[3]+'-'+String(MON[m1[1]]).padStart(2,'0')+'-'+String(m1[2]).padStart(2,'0');
+  return s; };
 const logOf=m=>logs[keyOf(m)];
 const mine=()=>DATA.members.filter(m=>m.u===role.name);
 const teamOf=t=>DATA.members.filter(m=>m.t===t);
@@ -1116,7 +1128,7 @@ function blockBlock(ms,who){
           return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}>
             <div class="mrow"><span class="mname">${esc(m.n)}</span>
               <span class="tag ${m.g}">${m.g}</span>
-              <span class="mstate">${l.d}</span></div>
+              <span class="mstate">${dstr(l.d)}</span></div>
             <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}${l.sb?'　·　SB '+l.sb+' 盒':''}</div>
             <div class="hook">${(l.note||'').trim()
               ? esc(l.note)
@@ -1128,12 +1140,12 @@ function blockBlock(ms,who){
       <div class="list" style="margin-bottom:14px">${nonoteList.map(m=>{const l=logOf(m);
         return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}><div class="mrow"><span class="mname">${esc(m.n)}</span>
           <span class="tag ${m.g}">${m.g}</span><span class="mstate">${esc(BMAP[l.block]||'')}</span></div>
-          <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}　·　${l.d}</div></div>`;}).join('')}</div>`:''}
+          <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}　·　${dstr(l.d)}</div></div>`;}).join('')}</div>`:''}
     ${okpend.length?`<div class="sect">選了「順利」但還沒下單　·　${okpend.length} 筆</div>
       <p class="note">沒有障礙、卻也還沒成交。這一群不會出現在上面的卡點分布裡，但停在這裡最久的通常就是被忘掉的人。</p>
       <div class="list" style="margin-bottom:14px">${okpend.map(m=>{const l=logOf(m);
         return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}><div class="mrow"><span class="mname">${esc(m.n)}</span>
-          <span class="tag ${m.g}">${m.g}</span><span class="mstate">${l.d}</span></div>
+          <span class="tag ${m.g}">${m.g}</span><span class="mstate">${dstr(l.d)}</span></div>
           <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}${l.sb?'　·　已給 SB '+l.sb+' 盒':''}</div>
           ${(l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:''}</div>`;}).join('')}</div>`:''}
     <p class="note">同樣是落後，處置完全不同。<br>
@@ -1158,7 +1170,7 @@ function detailBlock(ms,who){
       <div class="mrow"><span class="mname">${esc(m.n)}</span>
         <span class="tag ${m.g}">${m.g}</span>
         <span class="mstate ${l.ord?'gold':(l.reply?'ok':'')}">${l.ord?('已下單'+(l.amt?' '+money(l.amt):'')):(l.reply?'有回應':'無回應')}</span></div>
-      <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${l.d}${who==='dept'?'　·　'+m.t:''}${l.sb?'　·　SB '+l.sb+' 盒':''}</div>
+      <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${dstr(l.d)}${who==='dept'?'　·　'+m.t:''}${l.sb?'　·　SB '+l.sb+' 盒':''}</div>
       ${l.sb?`<div class="hook"><b>SB ${l.sb} 盒</b>　${l.ord?'後續已下單'+(l.amt?' '+money(l.amt):''):'後續尚未下單'}</div>`:''}
       ${l.block&&l.block!=='ok'?`<div class="hook"><b>${esc(BMAP[l.block])}</b>${(l.note||'').trim()?'　'+esc(l.note):'　<span style="color:#A8A093">沒寫備註</span>'}</div>`
         :((l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:'')}
@@ -1225,6 +1237,20 @@ function openMember(m){
 function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.remove('on');editing=null;}
 function today(){const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function rpLeft(n){ const r=RPMAX-n; return r>=0?('還可以打 '+r+' 字'):('超過 '+(-r)+' 字'); }
+function bindReply(){
+  const cx=$('#cx'); if(cx) cx.onclick=closeSheet;
+  const rti=$('#rp');
+  if(rti){ rti.oninput=()=>{const c=$('#rpc');
+    if(c){ c.textContent=rpLeft(rti.value.length); c.style.color=rti.value.length>=RPMAX?'#B4472F':''; }};
+    rti.dispatchEvent(new Event('input')); }
+  const rg=$('#rpgo'); if(rg) rg.onclick=async()=>{
+    const t=(($('#rp')||{}).value||'').trim().slice(0,RPMAX);
+    rg.disabled=true; rg.textContent='送出中…';
+    try{ await sendReply(editing,t); toast(t?'回覆已送出':'回覆已清除');
+         drawSheet(); render(); }
+    catch(e){ rg.disabled=false; rg.textContent='再試一次'; toast('沒有送出，等一下再按'); }};
+}
 function drawSheet(){
   const m=editing; if(!m) return;
   const ready=draft.block!==null&&draft.reply!==null&&(draft.ord===true||draft.ord===false);
@@ -1235,17 +1261,18 @@ function drawSheet(){
     <div class="sh"><h3>${esc(m.n)}</h3>
       <p>${m.t}　·　${esc(m.u)}　·　${m.gn}</p></div>
     <div class="sb">
-      ${L0?`<div class="hook" style="margin:0 0 12px"><b>${L0.d}</b>　${L0.reply?'有回應':'無回應'}　·　${L0.ord?'已下單'+(L0.amt?' '+money(L0.amt):''):'未下單'}${L0.sb?'　·　SB '+L0.sb+' 盒':''}<br>
+      ${L0?`<div class="hook" style="margin:0 0 12px"><b>${dstr(L0.d)}</b>　${L0.reply?'有回應':'無回應'}　·　${L0.ord?'已下單'+(L0.amt?' '+money(L0.amt):''):'未下單'}${L0.sb?'　·　SB '+L0.sb+' 盒':''}<br>
         <b>${esc(BMAP[L0.block]||'—')}</b>${(L0.note||'').trim()?'　'+esc(L0.note):'　<span style="color:#A8A093">沒寫備註</span>'}</div>`
         :`<div class="empty" style="padding:14px 0">這位還沒有任何紀錄，等上線填了才能回覆。</div>`}
       ${rpHtml(m,L0)}
       ${L0?`<div class="fld"><label class="lb" for="rp">經銷部回覆給 ${esc(m.u)}（他會在自己的畫面看到）</label>
         <textarea id="rp" rows="3" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc((L0||{}).rpd||'')}</textarea>
-        <div class="denom" id="rpc" style="margin-top:4px">${((L0||{}).rpd||'').length} / ${RPMAX} 字</div>
+        <div class="denom" id="rpc" style="margin-top:4px">${rpLeft(((L0||{}).rpd||'').length)}</div>
         <button class="save" id="rpgo" style="margin-top:10px">送出回覆</button></div>`:''}
       <p class="note">經銷部只回覆，不代填。接觸紀錄由該位上線自己填寫。</p>
-      <button class="cancel" id="cx">關閉</button>
+      <button class="skip" id="cx">關閉</button>
     </div>`;
+    bindReply();
     return;
   }
   $('#sheet').innerHTML=`
@@ -1264,14 +1291,14 @@ function drawSheet(){
         const mine=myWho()==='leader'?(L.rpl||''):(L.rpd||'');
         return `<div class="fld"><label class="lb" for="rp">${myWho()==='leader'?'團隊長':'經銷部'}回覆給 ${esc(m.u)}（他會在自己的畫面看到）</label>
         <textarea id="rp" rows="2" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc(mine)}</textarea>
-        <div class="denom" id="rpc" style="margin-top:4px">${mine.length} / ${RPMAX} 字</div>
+        <div class="denom" id="rpc" style="margin-top:4px">${rpLeft(mine.length)}</div>
         <button class="reread" id="rpgo" style="margin-top:8px">送出回覆</button></div>`;})():''}
       ${m.g==='A'?`<div class="offwarn" style="background:#F1EFE8;border-color:#D9D2C4;color:#5C5348">
         <b>這位是檔期主力，要鞏固、不算喚醒</b>
         他本來就在買，下單一樣有返利，SB 也可以給他。<br>
         ${CUP_LIVE?'但這一筆不計入喚醒競賽人數——競賽只算 B／C／D 三群。':'但這一筆不算喚醒人數——喚醒只算 B／C／D 三群。'}</div>`:''}
       <div class="fld"><label class="lb" for="dt">接觸日期</label>
-        <input type="date" id="dt" value="${draft.d}"></div>
+        <input type="date" id="dt" value="${dstr(draft.d)}"></div>
       <div class="fld"><span class="lb">對方有回應嗎</span><div class="seg">
         <button data-r="0" aria-pressed="${draft.reply===false}">沒有回應</button>
         <button data-r="1" aria-pressed="${draft.reply===true}">有回應</button></div></div>
@@ -1292,18 +1319,11 @@ function drawSheet(){
       <button class="save" id="sv" ${ready?'':'disabled'}>${ready?'記錄':'請選擇回應、下單與卡點'}</button>
       <button class="skip" id="cl">取消</button>
     </div>`;
+  bindReply();
   $('#dt').onchange=e=>draft.d=e.target.value;
   const am=$('#am'); if(am) am.oninput=e=>draft.amt=e.target.value;
   const sx=$('#sbx'); if(sx) sx.oninput=e=>draft.sb=e.target.value;
   const nt=$('#nt'); if(nt) nt.oninput=e=>draft.note=e.target.value;
-  const cx=$('#cx'); if(cx) cx.onclick=closeSheet;
-  const rti=$('#rp'); if(rti) rti.oninput=()=>{const c=$('#rpc');
-    if(c) c.textContent=rti.value.length+' / '+RPMAX+' 字';};
-  const rg=$('#rpgo'); if(rg) rg.onclick=async()=>{
-    const t=($('#rp').value||'').trim().slice(0,RPMAX);
-    rg.disabled=true; rg.textContent='送出中…';
-    try{ await sendReply(editing,t); toast(t?'回覆已送出':'回覆已清除'); drawSheet(); bind(); }
-    catch(e){ rg.disabled=false; rg.textContent='再試一次'; toast('沒有送出，等一下再按'); }};
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{draft.reply=b.dataset.r==='1';keep();drawSheet();});
   document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{draft.ord=b.dataset.o==='1';
     if(draft.ord&&draft.reply===null)draft.reply=true; keep();drawSheet();});
