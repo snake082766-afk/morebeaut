@@ -383,6 +383,8 @@ const repliesOf=l=>{ const a=[];
   return a; };
 const lastRpt=l=>Math.max((l&&l.rpdt)||0,(l&&l.rplt)||0);
 const isNewRp=(m,l)=>!!(l&&repliesOf(l).length&&(readRp[keyOf(m)]||0)<lastRpt(l));
+// 給經銷部看的：只算團隊長寫的、且還沒看過
+const isNewLeaderRp=(m,l)=>!!(l&&l.rpl&&(readRp[keyOf(m)]||0)<(l.rplt||0));
 async function sendReply(m,text){
   const now=Date.now(), who=myWho();
   await sendBody({key:keyOf(m),mode:'reply',who:who,rp:text,rpt:now});
@@ -846,6 +848,9 @@ function renderDept(){
       <div class="pn"><i>${moneyN(s.amt)}</i><s>下單金額${moneyU(s.amt)}</s></div>
     </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
     <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div>
+    ${(()=>{const nn=DATA.members.filter(q=>isNewLeaderRp(q,logOf(q))).length;
+      return nn?`<button class="denom sbjump" id="rpjump" style="background:#FBF4E4;border-color:#D9C08A;color:#5C4A22">
+        <b style="color:#9C7C33">團隊長回覆了 ${nn} 則</b>　你之前回的那幾筆有下文　·　看是哪幾位 ›</button>`:'';})()}
     <button class="denom sbjump" id="sbjump">SB 已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已下單${s.sbn?`（${Math.round(s.sbi/s.sbn*100)}%）`:''}　·　看名單 ›</button></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
     ${tab==='wr'?wrBlock()
@@ -1163,10 +1168,15 @@ function blockBlock(ms,who){
 /* ===== 明細 ===== */
 function detailBlock(ms,who){
   const rec=ms.filter(m=>logOf(m));
-  const D=[['all','全部 '+rec.length],['sb','已給 SB '+rec.filter(m=>logOf(m).sb>0).length],
-           ['ord','已下單 '+rec.filter(m=>logOf(m).ord).length],['block','有卡點'],['noreply','無回應']];
+  const nrp=rec.filter(m=>who==='dept'?isNewLeaderRp(m,logOf(m)):isNewRp(m,logOf(m))).length;
+  const D=[['all','全部 '+rec.length]]
+    .concat(nrp?[['rp','新回覆 '+nrp]]:[])
+    .concat([['sb','已給 SB '+rec.filter(m=>logOf(m).sb>0).length],
+           ['ord','已下單 '+rec.filter(m=>logOf(m).ord).length],['block','有卡點'],['noreply','無回應']]);
   let show=rec.filter(m=>{const l=logOf(m);
-    return dfilter==='all'?true:dfilter==='sb'?l.sb>0:dfilter==='ord'?!!l.ord
+    return dfilter==='all'?true
+      :dfilter==='rp'?(who==='dept'?isNewLeaderRp(m,l):isNewRp(m,l))
+      :dfilter==='sb'?l.sb>0:dfilter==='ord'?!!l.ord
       :dfilter==='block'?(l.block&&l.block!=='ok'):!l.reply;});
   show.sort(dfilter==='sb'
     ?(a,b)=>(logOf(b).sb||0)-(logOf(a).sb||0)||(logOf(b).amt||0)-(logOf(a).amt||0)
@@ -1211,7 +1221,10 @@ function bindDetail(){
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dfilter=b.dataset.d;render()});
   const e=$('#exp'); if(e) e.onclick=doExport;
   const j=$('#sbjump'); if(j) j.onclick=()=>{tab='detail';dfilter='sb';render();window.scrollTo(0,0);};
-  const rj=$('#rpjump'); if(rj) rj.onclick=()=>{tab='list';lfilter='rp';render();window.scrollTo(0,0);};
+  const rj=$('#rpjump'); if(rj) rj.onclick=()=>{
+    if(role&&role.type==='dept'){ tab='detail'; dfilter='rp'; }
+    else { tab='list'; lfilter='rp'; }
+    render(); window.scrollTo(0,0);};
 }
 function doExport(){
   const ms=(role.type==='leader'?teamOf(role.team):DATA.members).filter(m=>logOf(m));
