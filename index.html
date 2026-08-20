@@ -79,6 +79,12 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
   box-shadow:0 1px 2px rgba(43,39,33,.04)}
 .mc:active{transform:scale(.988)}
 .list.pending .mc{opacity:.55}
+.rpbox{margin:4px 0 14px;padding:11px 13px;background:#FBF4E4;border:1px solid #D9C08A;
+  border-left-width:3px;border-radius:9px;font-size:12.5px;line-height:1.85;color:#5C4A22}
+.rpbox b{display:block;font-size:12px;color:#9C7C33;margin-bottom:3px}
+.rpsep{height:1px;background:#E3D3AE;margin:9px 0}
+.newdot{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;
+  background:#9C7C33;color:#fff;font-size:10px;vertical-align:middle}
 .loadbar{margin:10px 0 2px;padding:9px 12px;background:var(--tint);border:1px solid var(--line);
   border-radius:9px;font-size:12px;color:#6B6459;line-height:1.7}
 .mc.done{border-left-color:var(--ok)}
@@ -354,6 +360,34 @@ async function sendBody(body,ms){
   } finally { clearTimeout(to); }
 }
 async function push(m,rec){ await sendBody(bodyOf(m,rec)); }
+/* ---------- 經銷部／團隊長 回覆 ---------- */
+const RKEY='morebeaut-wake-readreply';
+let readRp={};
+function loadRead(){ try{readRp=JSON.parse(localStorage.getItem(RKEY)||'{}')||{};}catch(e){readRp={};} }
+function saveRead(){ try{localStorage.setItem(RKEY,JSON.stringify(readRp));}catch(e){} }
+const RPMAX=300;
+const canReply=()=>!peek&&role&&(role.type==='dept'||role.type==='leader');
+const myWho=()=>role&&role.type==='leader'?'leader':'dept';
+// 兩則回覆各自獨立，不會互相覆蓋
+const repliesOf=l=>{ const a=[];
+  if(l&&l.rpd) a.push({who:'經銷部',t:l.rpd,ts:l.rpdt||0});
+  if(l&&l.rpl) a.push({who:'團隊長',t:l.rpl,ts:l.rplt||0});
+  return a; };
+const lastRpt=l=>Math.max((l&&l.rpdt)||0,(l&&l.rplt)||0);
+const isNewRp=(m,l)=>!!(l&&repliesOf(l).length&&(readRp[keyOf(m)]||0)<lastRpt(l));
+async function sendReply(m,text){
+  const now=Date.now(), who=myWho();
+  await sendBody({key:keyOf(m),mode:'reply',who:who,rp:text,rpt:now});
+  const l=logs[keyOf(m)];
+  if(l){ if(who==='leader'){ l.rpl=text; l.rplt=now; } else { l.rpd=text; l.rpdt=now; } }
+}
+function rpHtml(m,l,mt){
+  const a=repliesOf(l); if(!a.length) return '';
+  const nw=isNewRp(m,l);
+  return `<div class="rpbox" style="margin:${mt||'4px 0 14px'}">${a.map((r,i)=>
+    `<b>${r.who}的回覆${(i===0&&nw)?'<span class="newdot">新</span>':''}</b>${esc(r.t)}`
+  ).join('<div class="rpsep"></div>')}</div>`;
+}
 
 /* ---------- 待送佇列：填完先存在這台裝置，連上了再自動補送 ---------- */
 const QKEY='morebeaut-wake-pending';
@@ -653,6 +687,9 @@ function renderUpline(isPeek){
       ${ladderLine(wakeOrdP(ms),wakeDenP(ms),ms.some(m=>m.asg))}
       ${loading?`<div class="loading">讀取紀錄中…</div>`:''}</div>
     <div class="filters">${F.map(([k,t])=>`<button class="fc" data-f="${k}" aria-pressed="${filter===k}">${t}</button>`).join('')}</div>
+    ${(()=>{const nn=ms.filter(q=>isNewRp(q,logOf(q))).length;
+      return nn?`<div class="rpbox" style="margin:12px 0 2px"><b>有 ${nn} 則新回覆</b>
+        名單上有金色框的那幾位，點進去看，看完這個提示就會消失。</div>`:'';})()}
     ${loading?`<div class="loadbar">紀錄讀取中，先不要填 — 避免蓋掉先前填過的內容。約需 2–5 秒。</div>`:''}
     <div class="list${loading?' pending':''}">${show.length?show.map(card).join('')
       :`<div class="empty">這一組都記過了。<br>切到「全部」可以修改先前的紀錄。</div>`}
@@ -674,6 +711,7 @@ function card(m){
       <span class="tag ${m.g}">${m.g}</span>
       <span class="mstate ${cls}">${lbl}${l&&l.ord&&l.amt?'　'+money(l.amt):''}</span></div>
     <div class="mmeta">最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}${l&&l.sb?`　·　已給 SB ${l.sb} 盒`:''}${m.asg?`　·　原上線 ${esc(m.ou)}（已沉睡）`:''}</div>
+    ${rpHtml(m,l,'8px 0 0')}
     ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
       :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
   </button>`;
@@ -731,6 +769,7 @@ function cardL(m){
       <span class="tag ${m.g}">${m.g}</span>
       <span class="mstate ${cls}">${lbl}${l&&l.ord&&l.amt?'　'+money(l.amt):''}</span></div>
     <div class="mmeta">${m.asg?'指派接手　·　原上線 '+esc(m.ou):'上線 '+esc(m.u||'—')}　·　最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}${l&&l.sb?`　·　已給 SB ${l.sb} 盒`:''}</div>
+    ${rpHtml(m,l,'8px 0 0')}
     ${st==='todo'?`<div class="hook"><b>${tag}</b>　${line}</div>`
       :(l&&l.block&&l.block!=='ok'?`<div class="hook"><b>卡點</b>　${esc(BMAP[l.block])}${l.note?'：'+esc(l.note):''}</div>`:'')}
   </button>`;
@@ -1060,8 +1099,11 @@ function blockBlock(ms,who){
   ms.forEach(m=>{const l=logOf(m);
     if(l&&l.block&&l.block!=='ok'){ (grp[l.block]=grp[l.block]||[]).push(m); }});
   const list=Object.entries(grp).sort((a,b)=>b[1].length-a[1].length);
-  const nonote=ms.filter(m=>{const l=logOf(m);
-    return l&&l.block&&l.block!=='ok'&&!(l.note||'').trim();}).length;
+  const nonoteList=ms.filter(m=>{const l=logOf(m);
+    return l&&l.block&&l.block!=='ok'&&!(l.note||'').trim();})
+    .sort((a,b)=>logOf(b).ts-logOf(a).ts);
+  const okpend=ms.filter(m=>{const l=logOf(m);
+    return l&&l.block==='ok'&&!l.ord;}).sort((a,b)=>logOf(b).ts-logOf(a).ts);
   return `<div class="sect">卡點分布　·　誰能解</div>
     ${list.length?list.map(([k,arr])=>`
       <div class="bl"><i>${arr.length}</i><span>${esc(BMAP[k])}</span><s>${OWNER[k]||''}</s></div>
@@ -1077,8 +1119,19 @@ function blockBlock(ms,who){
               : '<span style="color:#A8A093">沒有寫備註 — 只知道類別，不知道真正卡在哪</span>'}</div>
           </div>`;}).join('')}
       </div>`).join(''):`<div class="empty">還沒有卡點紀錄。</div>`}
-    ${nonote?`<p class="note"><b>${nonote} 筆沒有寫備註。</b>只有類別沒有原話，判斷不了是真卡住還是隨手選一個。<br>
-      這幾筆值得回頭問一句「他當時怎麼說」。</p>`:''}
+    ${nonoteList.length?`<div class="sect">沒有寫備註　·　${nonoteList.length} 筆</div>
+      <p class="note">只有類別、沒有原話，判斷不了是真卡住還是隨手選一個。這幾位值得回頭問一句「他當時怎麼說」。</p>
+      <div class="list" style="margin-bottom:14px">${nonoteList.map(m=>{const l=logOf(m);
+        return `<div class="dc"><div class="mrow"><span class="mname">${esc(m.n)}</span>
+          <span class="tag ${m.g}">${m.g}</span><span class="mstate">${esc(BMAP[l.block]||'')}</span></div>
+          <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}　·　${l.d}</div></div>`;}).join('')}</div>`:''}
+    ${okpend.length?`<div class="sect">選了「順利」但還沒下單　·　${okpend.length} 筆</div>
+      <p class="note">沒有障礙、卻也還沒成交。這一群不會出現在上面的卡點分布裡，但停在這裡最久的通常就是被忘掉的人。</p>
+      <div class="list" style="margin-bottom:14px">${okpend.map(m=>{const l=logOf(m);
+        return `<div class="dc"><div class="mrow"><span class="mname">${esc(m.n)}</span>
+          <span class="tag ${m.g}">${m.g}</span><span class="mstate">${l.d}</span></div>
+          <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}${l.sb?'　·　已給 SB '+l.sb+' 盒':''}</div>
+          ${(l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:''}</div>`;}).join('')}</div>`:''}
     <p class="note">同樣是落後，處置完全不同。<br>
     「接觸了但沒回應」是話術問題；「方案不夠」與「儲值卡住」要往上報，這一層出手沒有用。</p>`;
 }
@@ -1143,6 +1196,7 @@ function openSheet(name){
   if(loading){ toast('紀錄還在讀取，等一下再填，才不會蓋掉先前填過的'); return; }
   editing=(role&&role.type==='leader'?teamOf(role.team):mine()).find(m=>m.n===name);
   const l=logOf(editing);
+  if(l&&lastRpt(l)){ readRp[keyOf(editing)]=lastRpt(l); saveRead(); }
   draft=l?{...l,sb:l.sb||'',ord:(l.ord===true||l.ord===false?l.ord:(l.amt>0?true:null))}
         :{d:today(),reply:null,ord:null,amt:'',sb:'',block:null,note:''};
   drawSheet(); $('#scrim').classList.add('on'); $('#sheet').classList.add('on');
@@ -1158,6 +1212,19 @@ function drawSheet(){
     <div class="sh"><h3>${esc(m.n)}</h3>
       <p>${m.gn}　·　最後買 ${esc(m.p||'無紀錄')}</p></div>
     <div class="sb">
+      ${rpHtml(m,logOf(m))}
+      ${(!canReply()&&repliesOf(logOf(m)).length)?(()=>{
+        const lead=DUAL_UP[m.t]||'';
+        const who=(role&&role.name===lead)?'經銷部':(lead?lead+'（你的團隊長）':'你的團隊長');
+        return `<p class="note" style="margin:-8px 0 14px">
+          看完想再討論、或需要協助，直接找 <b>${esc(who)}</b> 談，這裡不用回。<br>
+          這個框只是讓你知道有人看到你寫的東西了。</p>`;})():''}
+      ${canReply()&&logOf(m)?(()=>{const L=logOf(m)||{};
+        const mine=myWho()==='leader'?(L.rpl||''):(L.rpd||'');
+        return `<div class="fld"><label class="lb" for="rp">${myWho()==='leader'?'團隊長':'經銷部'}回覆給 ${esc(m.u)}（他會在自己的畫面看到）</label>
+        <textarea id="rp" rows="2" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc(mine)}</textarea>
+        <div class="denom" id="rpc" style="margin-top:4px">${mine.length} / ${RPMAX} 字</div>
+        <button class="reread" id="rpgo" style="margin-top:8px">送出回覆</button></div>`;})():''}
       ${m.g==='A'?`<div class="offwarn" style="background:#F1EFE8;border-color:#D9D2C4;color:#5C5348">
         <b>這位是檔期主力，要鞏固、不算喚醒</b>
         他本來就在買，下單一樣有返利，SB 也可以給他。<br>
@@ -1188,6 +1255,13 @@ function drawSheet(){
   const am=$('#am'); if(am) am.oninput=e=>draft.amt=e.target.value;
   const sx=$('#sbx'); if(sx) sx.oninput=e=>draft.sb=e.target.value;
   const nt=$('#nt'); if(nt) nt.oninput=e=>draft.note=e.target.value;
+  const rti=$('#rp'); if(rti) rti.oninput=()=>{const c=$('#rpc');
+    if(c) c.textContent=rti.value.length+' / '+RPMAX+' 字';};
+  const rg=$('#rpgo'); if(rg) rg.onclick=async()=>{
+    const t=($('#rp').value||'').trim().slice(0,RPMAX);
+    rg.disabled=true; rg.textContent='送出中…';
+    try{ await sendReply(editing,t); toast(t?'回覆已送出':'回覆已清除'); drawSheet(); bind(); }
+    catch(e){ rg.disabled=false; rg.textContent='再試一次'; toast('沒有送出，等一下再按'); }};
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{draft.reply=b.dataset.r==='1';keep();drawSheet();});
   document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{draft.ord=b.dataset.o==='1';
     if(draft.ord&&draft.reply===null)draft.reply=true; keep();drawSheet();});
@@ -1251,7 +1325,7 @@ function boot(){
          : v.type==='leader'?{type:'leader',team:v.team}:{type:'dept'};
     if(role.type==='leader'){tab='self';} if(role.type==='dept'){tab='rank';}
   }
-  loadPending();
+  loadPending(); loadRead();
   render();
   Promise.all([loadRetry(),loadSeen(),loadProj()]).then(async()=>{ loading=false;
     applyPending(); render();
