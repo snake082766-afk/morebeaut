@@ -83,6 +83,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
   border-left-width:3px;border-radius:9px;font-size:12.5px;line-height:1.85;color:#5C4A22}
 .rpbox b{display:block;font-size:12px;color:#9C7C33;margin-bottom:3px}
 .rpsep{height:1px;background:#E3D3AE;margin:9px 0}
+.save.okbtn,.reread.okbtn{background:#2F7A5E;color:#fff;border-color:#2F7A5E}
 .dc.tapx{position:relative;padding-bottom:24px}
 .dc.tapx:active{transform:scale(.995)}
 .dc.tapx::after{content:'開啟／回覆 ›';position:absolute;right:12px;bottom:8px;
@@ -386,7 +387,8 @@ async function sendReply(m,text){
   const now=Date.now(), who=myWho();
   await sendBody({key:keyOf(m),mode:'reply',who:who,rp:text,rpt:now});
   const l=logs[keyOf(m)];
-  if(l){ if(who==='leader'){ l.rpl=text; l.rplt=now; } else { l.rpd=text; l.rpdt=now; } }
+  if(l){ if(who==='leader'){ l.rpl=text; l.rplt=now; } else { l.rpd=text; l.rpdt=now; }
+    readRp[keyOf(m)]=lastRpt(l); saveRead(); }
 }
 function rpHtml(m,l,mt){
   const a=repliesOf(l); if(!a.length) return '';
@@ -765,10 +767,13 @@ function renderLeader(isPeek){
 }
 function listBlock(T,isPeek){
   const ms=teamOf(T);
+  const nn=ms.filter(m=>isNewRp(m,logOf(m))).length;
   const F=[['all','全部 '+ms.length],
            ['todo','未接觸 '+ms.filter(m=>stateOf(m)==='todo').length],
-           ['sb','已給 SB '+ms.filter(m=>logOf(m).sb>0).length]];
-  const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?logOf(m).sb>0:stateOf(m)==='todo');
+           ['sb','已給 SB '+ms.filter(m=>logOf(m).sb>0).length]]
+          .concat(nn?[['rp','新回覆 '+nn]]:[]);
+  const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?logOf(m).sb>0
+    :lfilter==='rp'?isNewRp(m,logOf(m)):stateOf(m)==='todo');
   return `<div class="lsearch"><input id="lq" type="search" placeholder="搜尋姓名或上線" value="${esc(lq)}"></div>
   <div class="filters">${F.map(([k,t])=>`<button class="fc" data-lf="${k}" aria-pressed="${lfilter===k}">${t}</button>`).join('')}</div>
   ${loading?`<div class="loadbar">紀錄讀取中，先不要填 — 避免蓋掉先前填過的內容。約需 2–5 秒。</div>`:''}
@@ -812,6 +817,9 @@ function selfBlock(T,s,tw,lw,info){
     <tr><td>下單金額</td><td>${money(lw.amt)}</td><td class="g">${money(tw.amt)}</td></tr>
     <tr><td>SB（盒）</td><td>${lw.sb||'—'}</td><td class="g">${tw.sb||0}</td></tr>
   </tbody></table>
+  ${(()=>{const nn=teamOf(T).filter(q=>isNewRp(q,logOf(q))).length;
+    return nn?`<button class="denom sbjump" id="rpjump" style="background:#FBF4E4;border-color:#D9C08A;color:#5C4A22">
+      <b style="color:#9C7C33">有 ${nn} 則新回覆</b>　經銷部回覆了你隊上的紀錄　·　看是哪幾位 ›</button>`:'';})()}
   <button class="denom sbjump" id="sbjump">SB 累計已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已下單　·　看名單 ›</button>
   <div class="sect">你隊上線的進度　·　接觸數由低到高</div>
   ${byUp.map(x=>{const ums=DATA.members.filter(q=>q.u===x.u.n);
@@ -1203,6 +1211,7 @@ function bindDetail(){
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dfilter=b.dataset.d;render()});
   const e=$('#exp'); if(e) e.onclick=doExport;
   const j=$('#sbjump'); if(j) j.onclick=()=>{tab='detail';dfilter='sb';render();window.scrollTo(0,0);};
+  const rj=$('#rpjump'); if(rj) rj.onclick=()=>{tab='list';lfilter='rp';render();window.scrollTo(0,0);};
 }
 function doExport(){
   const ms=(role.type==='leader'?teamOf(role.team):DATA.members).filter(m=>logOf(m));
@@ -1247,8 +1256,10 @@ function bindReply(){
   const rg=$('#rpgo'); if(rg) rg.onclick=async()=>{
     const t=(($('#rp')||{}).value||'').trim().slice(0,RPMAX);
     rg.disabled=true; rg.textContent='送出中…';
-    try{ await sendReply(editing,t); toast(t?'回覆已送出':'回覆已清除');
-         drawSheet(); render(); }
+    try{ await sendReply(editing,t);
+         rg.textContent=t?'已送出 ✓':'已清除 ✓'; rg.classList.add('okbtn');
+         toast(t?'回覆已送出，'+esc(editing.u)+' 會看到':'回覆已清除');
+         setTimeout(()=>{ drawSheet(); bindReply(); render(); },900); }
     catch(e){ rg.disabled=false; rg.textContent='再試一次'; toast('沒有送出，等一下再按'); }};
 }
 function drawSheet(){
@@ -1268,7 +1279,7 @@ function drawSheet(){
       ${L0?`<div class="fld"><label class="lb" for="rp">經銷部回覆給 ${esc(m.u)}（他會在自己的畫面看到）</label>
         <textarea id="rp" rows="3" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc((L0||{}).rpd||'')}</textarea>
         <div class="denom" id="rpc" style="margin-top:4px">${rpLeft(((L0||{}).rpd||'').length)}</div>
-        <button class="save" id="rpgo" style="margin-top:10px">送出回覆</button></div>`:''}
+        <button class="save" id="rpgo" style="margin-top:10px">${((L0||{}).rpd||'').trim()?'更新回覆':'送出回覆'}</button></div>`:''}
       <p class="note">經銷部只回覆，不代填。接觸紀錄由該位上線自己填寫。</p>
       <button class="skip" id="cx">關閉</button>
     </div>`;
@@ -1292,7 +1303,7 @@ function drawSheet(){
         return `<div class="fld"><label class="lb" for="rp">${myWho()==='leader'?'團隊長':'經銷部'}回覆給 ${esc(m.u)}（他會在自己的畫面看到）</label>
         <textarea id="rp" rows="2" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc(mine)}</textarea>
         <div class="denom" id="rpc" style="margin-top:4px">${rpLeft(mine.length)}</div>
-        <button class="reread" id="rpgo" style="margin-top:8px">送出回覆</button></div>`;})():''}
+        <button class="reread" id="rpgo" style="margin-top:8px">${mine.trim()?'更新回覆':'送出回覆'}</button></div>`;})():''}
       ${m.g==='A'?`<div class="offwarn" style="background:#F1EFE8;border-color:#D9D2C4;color:#5C5348">
         <b>這位是檔期主力，要鞏固、不算喚醒</b>
         他本來就在買，下單一樣有返利，SB 也可以給他。<br>
