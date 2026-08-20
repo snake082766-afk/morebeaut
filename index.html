@@ -83,6 +83,10 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
   border-left-width:3px;border-radius:9px;font-size:12.5px;line-height:1.85;color:#5C4A22}
 .rpbox b{display:block;font-size:12px;color:#9C7C33;margin-bottom:3px}
 .rpsep{height:1px;background:#E3D3AE;margin:9px 0}
+.dc.tapx{position:relative;padding-bottom:24px}
+.dc.tapx:active{transform:scale(.995)}
+.dc.tapx::after{content:'開啟／回覆 ›';position:absolute;right:12px;bottom:8px;
+  font-size:10.5px;color:#9C7C33;letter-spacing:.03em}
 .newdot{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;
   background:#9C7C33;color:#fff;font-size:10px;vertical-align:middle}
 .loadbar{margin:10px 0 2px;padding:9px 12px;background:var(--tint);border:1px solid var(--line);
@@ -1109,7 +1113,7 @@ function blockBlock(ms,who){
       <div class="bl"><i>${arr.length}</i><span>${esc(BMAP[k])}</span><s>${OWNER[k]||''}</s></div>
       <div class="list" style="margin:2px 0 14px">
         ${arr.sort((a,b)=>logOf(b).ts-logOf(a).ts).map(m=>{const l=logOf(m);
-          return `<div class="dc">
+          return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}>
             <div class="mrow"><span class="mname">${esc(m.n)}</span>
               <span class="tag ${m.g}">${m.g}</span>
               <span class="mstate">${l.d}</span></div>
@@ -1122,13 +1126,13 @@ function blockBlock(ms,who){
     ${nonoteList.length?`<div class="sect">沒有寫備註　·　${nonoteList.length} 筆</div>
       <p class="note">只有類別、沒有原話，判斷不了是真卡住還是隨手選一個。這幾位值得回頭問一句「他當時怎麼說」。</p>
       <div class="list" style="margin-bottom:14px">${nonoteList.map(m=>{const l=logOf(m);
-        return `<div class="dc"><div class="mrow"><span class="mname">${esc(m.n)}</span>
+        return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}><div class="mrow"><span class="mname">${esc(m.n)}</span>
           <span class="tag ${m.g}">${m.g}</span><span class="mstate">${esc(BMAP[l.block]||'')}</span></div>
           <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}　·　${l.d}</div></div>`;}).join('')}</div>`:''}
     ${okpend.length?`<div class="sect">選了「順利」但還沒下單　·　${okpend.length} 筆</div>
       <p class="note">沒有障礙、卻也還沒成交。這一群不會出現在上面的卡點分布裡，但停在這裡最久的通常就是被忘掉的人。</p>
       <div class="list" style="margin-bottom:14px">${okpend.map(m=>{const l=logOf(m);
-        return `<div class="dc"><div class="mrow"><span class="mname">${esc(m.n)}</span>
+        return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}><div class="mrow"><span class="mname">${esc(m.n)}</span>
           <span class="tag ${m.g}">${m.g}</span><span class="mstate">${l.d}</span></div>
           <div class="mmeta">${who==='dept'?esc(m.t)+'　·　':''}${esc(m.u)}${l.sb?'　·　已給 SB '+l.sb+' 盒':''}</div>
           ${(l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:''}</div>`;}).join('')}</div>`:''}
@@ -1150,7 +1154,7 @@ function detailBlock(ms,who){
   return `
   <div class="filters">${D.map(([k,t])=>`<button class="fc" data-d="${k}" aria-pressed="${dfilter===k}">${t}</button>`).join('')}</div>
   ${show.length?show.map(m=>{const l=logOf(m);
-    return `<div class="dc">
+    return `<div class="dc${canReply()?' tapx':''}" ${canReply()?`data-key="${esc(keyOf(m))}"`:''}>
       <div class="mrow"><span class="mname">${esc(m.n)}</span>
         <span class="tag ${m.g}">${m.g}</span>
         <span class="mstate ${l.ord?'gold':(l.reply?'ok':'')}">${l.ord?('已下單'+(l.amt?' '+money(l.amt):'')):(l.reply?'有回應':'無回應')}</span></div>
@@ -1177,7 +1181,13 @@ function bindProj(){
     const k=b.dataset.e; proj[k]=((proj[k]||0)+1)%3;
     await saveProj(); render();});
 }
+function bindTap(){
+  document.querySelectorAll('.dc.tapx').forEach(b=>{
+    b.style.cursor='pointer';
+    b.onclick=()=>openSheetKey(b.dataset.key);});
+}
 function bindDetail(){
+  bindTap();
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dfilter=b.dataset.d;render()});
   const e=$('#exp'); if(e) e.onclick=doExport;
   const j=$('#sbjump'); if(j) j.onclick=()=>{tab='detail';dfilter='sb';render();window.scrollTo(0,0);};
@@ -1192,9 +1202,20 @@ function doExport(){
 }
 
 /* ===== 記錄表單 ===== */
+function openSheetKey(k){
+  if(loading){ toast('紀錄還在讀取，等一下再開'); return; }
+  const m=DATA.members.find(q=>keyOf(q)===k);
+  if(!m){ toast('找不到這筆'); return; }
+  openMember(m);
+}
 function openSheet(name){
   if(loading){ toast('紀錄還在讀取，等一下再填，才不會蓋掉先前填過的'); return; }
-  editing=(role&&role.type==='leader'?teamOf(role.team):mine()).find(m=>m.n===name);
+  const pool=role&&role.type==='leader'?teamOf(role.team):(role&&role.type==='dept'?DATA.members:mine());
+  openMember(pool.find(m=>m.n===name));
+}
+function openMember(m){
+  if(!m) return;
+  editing=m;
   const l=logOf(editing);
   if(l&&lastRpt(l)){ readRp[keyOf(editing)]=lastRpt(l); saveRead(); }
   draft=l?{...l,sb:l.sb||'',ord:(l.ord===true||l.ord===false?l.ord:(l.amt>0?true:null))}
@@ -1207,6 +1228,26 @@ function today(){const d=new Date();
 function drawSheet(){
   const m=editing; if(!m) return;
   const ready=draft.block!==null&&draft.reply!==null&&(draft.ord===true||draft.ord===false);
+  const L0=logOf(m);
+  if(role&&role.type==='dept'){
+    $('#sheet').innerHTML=`
+    <div class="grab"></div>
+    <div class="sh"><h3>${esc(m.n)}</h3>
+      <p>${m.t}　·　${esc(m.u)}　·　${m.gn}</p></div>
+    <div class="sb">
+      ${L0?`<div class="hook" style="margin:0 0 12px"><b>${L0.d}</b>　${L0.reply?'有回應':'無回應'}　·　${L0.ord?'已下單'+(L0.amt?' '+money(L0.amt):''):'未下單'}${L0.sb?'　·　SB '+L0.sb+' 盒':''}<br>
+        <b>${esc(BMAP[L0.block]||'—')}</b>${(L0.note||'').trim()?'　'+esc(L0.note):'　<span style="color:#A8A093">沒寫備註</span>'}</div>`
+        :`<div class="empty" style="padding:14px 0">這位還沒有任何紀錄，等上線填了才能回覆。</div>`}
+      ${rpHtml(m,L0)}
+      ${L0?`<div class="fld"><label class="lb" for="rp">經銷部回覆給 ${esc(m.u)}（他會在自己的畫面看到）</label>
+        <textarea id="rp" rows="3" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc((L0||{}).rpd||'')}</textarea>
+        <div class="denom" id="rpc" style="margin-top:4px">${((L0||{}).rpd||'').length} / ${RPMAX} 字</div>
+        <button class="save" id="rpgo" style="margin-top:10px">送出回覆</button></div>`:''}
+      <p class="note">經銷部只回覆，不代填。接觸紀錄由該位上線自己填寫。</p>
+      <button class="cancel" id="cx">關閉</button>
+    </div>`;
+    return;
+  }
   $('#sheet').innerHTML=`
     <div class="grab"></div>
     <div class="sh"><h3>${esc(m.n)}</h3>
@@ -1255,6 +1296,7 @@ function drawSheet(){
   const am=$('#am'); if(am) am.oninput=e=>draft.amt=e.target.value;
   const sx=$('#sbx'); if(sx) sx.oninput=e=>draft.sb=e.target.value;
   const nt=$('#nt'); if(nt) nt.oninput=e=>draft.note=e.target.value;
+  const cx=$('#cx'); if(cx) cx.onclick=closeSheet;
   const rti=$('#rp'); if(rti) rti.oninput=()=>{const c=$('#rpc');
     if(c) c.textContent=rti.value.length+' / '+RPMAX+' 字';};
   const rg=$('#rpgo'); if(rg) rg.onclick=async()=>{
