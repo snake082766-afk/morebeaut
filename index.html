@@ -84,6 +84,16 @@ header{position:sticky;top:0;z-index:20;background:rgba(250,247,240,.94);backdro
 .rpbox b{display:block;font-size:12px;color:#9C7C33;margin-bottom:3px}
 .rpsep{height:1px;background:#E3D3AE;margin:9px 0}
 .save.okbtn,.reread.okbtn{background:#2F7A5E;color:#fff;border-color:#2F7A5E}
+.todo{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-bottom:8px;
+  padding:13px 14px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);
+  border-radius:10px;font:inherit;color:var(--ink)}
+.todo:active{transform:scale(.995)}
+.todo.zero{opacity:.5;border-left-color:var(--line)}
+.todo i{font-style:normal;font-size:22px;font-weight:600;color:var(--gold);min-width:34px;text-align:center}
+.todo span{flex:1;font-size:12px;color:var(--mute);line-height:1.6}
+.todo span b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:1px}
+.todo s{text-decoration:none;font-size:11px;color:var(--gold);white-space:nowrap}
+.todo.zero i,.todo.zero s{color:var(--mute)}
 .dc.tapx{position:relative;padding-bottom:24px}
 .dc.tapx:active{transform:scale(.995)}
 .dc.tapx::after{content:'開啟／回覆 ›';position:absolute;right:12px;bottom:8px;
@@ -838,7 +848,8 @@ function renderDept(){
     const ms2=teamOf(t);
     return {t,info:DATA.teams[t],...stat(ms2),tw:statWk(ms2,curWk())};
   });
-  const TAB=[['rank','喚醒'],['cup',CUP_LIVE?'競賽':'競賽（未公布）'],['block','卡點'],['detail','明細'],['silent','未動'],['ev','活動'],['view','視角']];
+  const TAB=[['rank','每天看'],['detail','明細'],['block','卡點'],
+             ['cup',CUP_LIVE?'競賽':'競賽（未公布）'],['silent','未動'],['ev','活動'],['view','視角']];
   const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
   $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
   <div class="wrap">
@@ -848,14 +859,11 @@ function renderDept(){
       <div class="pn"><i>${moneyN(s.amt)}</i><s>下單金額${moneyU(s.amt)}</s></div>
     </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
     <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div>
-    ${(()=>{const nn=DATA.members.filter(q=>isNewLeaderRp(q,logOf(q))).length;
-      return nn?`<button class="denom sbjump" id="rpjump" style="background:#FBF4E4;border-color:#D9C08A;color:#5C4A22">
-        <b style="color:#9C7C33">團隊長回覆了 ${nn} 則</b>　你之前回的那幾筆有下文　·　看是哪幾位 ›</button>`:'';})()}
     <button class="denom sbjump" id="sbjump">SB 已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已下單${s.sbn?`（${Math.round(s.sbi/s.sbn*100)}%）`:''}　·　看名單 ›</button></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
     ${tab==='wr'?wrBlock()
      :tab==='perf'?perfBlock()
-     :tab==='rank'?perfLine()+`
+     :tab==='rank'?todoBlock()+perfLine()+`
       <table class="tt"><thead><tr><th>團隊</th><th>已喚醒／母數</th><th>已接觸</th><th>本週</th></tr></thead><tbody>
       ${rows.map(r=>{const tms=teamOf(r.t);const so=wakeOrd(tms),sd=wakeDen(tms);
         return `<tr class="${r.con?'':'blank'}"><td>${r.t}</td>
@@ -1072,6 +1080,22 @@ function evBlock(){
 }
 
 /* ===== 卡點 ===== */
+function todoBlock(){
+  const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
+  const rec=DATA.members.filter(m=>logOf(m));
+  const norp=rec.filter(m=>!((logOf(m).rpd||'').trim())).length;
+  const newrp=DATA.members.filter(m=>isNewLeaderRp(m,logOf(m))).length;
+  const R=[
+    ['t-silent', silent.length, '還沒動的上線', '一次也沒記錄過，先確認連結收到了沒'],
+    ['t-norp',   norp,          '填了、我還沒回', '挑有寫備註或卡住的回，不必全部回'],
+    ['t-newrp',  newrp,         '團隊長回我了',   '你回的那幾筆有下文']
+  ];
+  return `<div class="sect">今天要做的</div>
+    ${R.map(([id,n,t,d])=>`<button class="todo${n?'':' zero'}" id="${id}">
+      <i>${n}</i><span><b>${t}</b>${d}</span><s>${n?'去看 ›':'目前沒有'}</s></button>`).join('')}
+    <p class="note">其他分頁是每週或結算才看的分析，不用天天進去。<br>
+    回覆不必回滿——固定一週回幾則，比一次回完然後停掉有用。</p>`;
+}
 function perfLine(){
   const p=pOf(ymNow()); const amt=stat(DATA.members).amt;
   if(!p) return '';
@@ -1168,14 +1192,19 @@ function blockBlock(ms,who){
 /* ===== 明細 ===== */
 function detailBlock(ms,who){
   const rec=ms.filter(m=>logOf(m));
+  const myRp=m=>{const l=logOf(m); return ((who==='dept'?(l.rpd||''):(l.rpl||'')).trim())!=='';};
   const nrp=rec.filter(m=>who==='dept'?isNewLeaderRp(m,logOf(m)):isNewRp(m,logOf(m))).length;
+  const nmine=rec.filter(myRp).length, nnone=rec.length-nmine;
   const D=[['all','全部 '+rec.length]]
     .concat(nrp?[['rp','新回覆 '+nrp]]:[])
+    .concat([['mine','我回過 '+nmine],['norp','還沒回 '+nnone]])
     .concat([['sb','已給 SB '+rec.filter(m=>logOf(m).sb>0).length],
            ['ord','已下單 '+rec.filter(m=>logOf(m).ord).length],['block','有卡點'],['noreply','無回應']]);
   let show=rec.filter(m=>{const l=logOf(m);
     return dfilter==='all'?true
       :dfilter==='rp'?(who==='dept'?isNewLeaderRp(m,l):isNewRp(m,l))
+      :dfilter==='mine'?myRp(m)
+      :dfilter==='norp'?!myRp(m)
       :dfilter==='sb'?l.sb>0:dfilter==='ord'?!!l.ord
       :dfilter==='block'?(l.block&&l.block!=='ok'):!l.reply;});
   show.sort(dfilter==='sb'
@@ -1190,6 +1219,7 @@ function detailBlock(ms,who){
         <span class="mstate ${l.ord?'gold':(l.reply?'ok':'')}">${l.ord?('已下單'+(l.amt?' '+money(l.amt):'')):(l.reply?'有回應':'無回應')}</span></div>
       <div class="mmeta">${esc(m.u)} → ${esc(m.n)}　·　${dstr(l.d)}${who==='dept'?'　·　'+m.t:''}${l.sb?'　·　SB '+l.sb+' 盒':''}</div>
       ${l.sb?`<div class="hook"><b>SB ${l.sb} 盒</b>　${l.ord?'後續已下單'+(l.amt?' '+money(l.amt):''):'後續尚未下單'}</div>`:''}
+      ${rpHtml(m,l,'8px 0 0')}
       ${l.block&&l.block!=='ok'?`<div class="hook"><b>${esc(BMAP[l.block])}</b>${(l.note||'').trim()?'　'+esc(l.note):'　<span style="color:#A8A093">沒寫備註</span>'}</div>`
         :((l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:'')}
     </div>`}).join(''):`<div class="empty">${dfilter==='sb'?'還沒有人被記錄拿到 SB。':'尚無紀錄。'}</div>`}
@@ -1221,6 +1251,10 @@ function bindDetail(){
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dfilter=b.dataset.d;render()});
   const e=$('#exp'); if(e) e.onclick=doExport;
   const j=$('#sbjump'); if(j) j.onclick=()=>{tab='detail';dfilter='sb';render();window.scrollTo(0,0);};
+  const go=(t,f)=>{tab=t; if(t==='detail') dfilter=f; render(); window.scrollTo(0,0);};
+  const t1=$('#t-silent'); if(t1) t1.onclick=()=>go('silent');
+  const t2=$('#t-norp');   if(t2) t2.onclick=()=>go('detail','norp');
+  const t3=$('#t-newrp');  if(t3) t3.onclick=()=>go('detail','rp');
   const rj=$('#rpjump'); if(rj) rj.onclick=()=>{
     if(role&&role.type==='dept'){ tab='detail'; dfilter='rp'; }
     else { tab='list'; lfilter='rp'; }
