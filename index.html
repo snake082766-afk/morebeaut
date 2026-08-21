@@ -1115,13 +1115,14 @@ function cupRows(scope){
     return {n:u.n,t:u.t,lv:u.lv,den:wakeDenP(ms),ord:wakeOrdP(ms)};
   });
   rows.forEach(r=>{ r.pay=tier(r.ord); });
-  // 各隊第一名（有達階梯才給加乘）
-  const best={};
-  rows.forEach(r=>{ if(!best[r.t]||r.ord>best[r.t].ord) best[r.t]=r; });
-  Object.values(best).forEach(r=>{ if(r.ord>0&&r.pay>0){ r.top=true; r.pay=Math.round(r.pay*1.5); } });
-  const all=DATA.uplines.map(u=>{const ms=DATA.members.filter(m=>m.u===u.n);return {n:u.n,ord:wakeOrdP(ms)};});
-  const champ=all.sort((a,b)=>b.ord-a.ord)[0];
-  rows.forEach(r=>{ if(champ&&champ.ord>0&&r.n===champ.n){ r.champ=true; r.pay=Math.max(r.pay,10000); } });
+  // 各隊第一名 ×1.5：必須先達到第一階（3 人）才算，同分並列
+  const bestOrd={};
+  rows.forEach(r=>{ if(r.ord>bestOrd[r.t]||bestOrd[r.t]===undefined) bestOrd[r.t]=r.ord; });
+  rows.forEach(r=>{ if(tier(r.ord)>0&&r.ord===bestOrd[r.t]){ r.top=true; r.pay=Math.round(tier(r.ord)*1.5); } });
+  // 全體第一 10,000：同樣要達到第一階，與階梯二擇一取高，不累加
+  const allOrd=DATA.uplines.map(u=>wakeOrdP(DATA.members.filter(m=>m.u===u.n)));
+  const champOrd=Math.max(0,...allOrd);
+  rows.forEach(r=>{ if(champOrd>=3&&r.ord===champOrd){ r.champ=true; r.pay=Math.max(r.pay,10000); } });
   rows.sort((a,b)=>b.ord-a.ord||b.den-a.den);
   return rows;
 }
@@ -1141,9 +1142,10 @@ function cupBlock(scope){
     <td>${r.ord} / ${r.den}</td>
     <td class="g">${r.pay?nt2(r.pay):'—'}</td></tr>`).join('')}
   </tbody></table>
-  <div class="denom">★ 該隊目前第一（階梯 ×1.5）　·　👑 全體第一（10,000，與階梯二擇一，不累加）</div>
+  <div class="denom">★ 該隊目前第一（階梯 ×1.5）　·　👑 全體第一（10,000，與階梯二擇一，取高者，不累加）<br>
+    兩者都要先達到第一階 3 人才成立；同分並列。未達 3 人一律沒有獎金。</div>
   <div class="denom" style="margin-top:3px">已有喚醒紀錄 ${done.length} 位 / ${rows.length} 位　·　試算獎金合計 ${nt2(sum)} 元${scope?'':`　·　預算 ${nt2(budget)} 元`}</div>
-  <p class="note">階梯：3 人 1,000　·　5 人 2,500　·　10 人 6,000。<br>
+  <p class="note">階梯：3 人 1,000　·　5 人 2,500　·　10 人 6,000。未達 3 人為 0。<br>
   母數低於 3 的上線碰不到第一階，這幾位靠的是每一筆下單的返利。<br>
   這裡的數字來自各人自己填的「已下單」。9/30 結算前要跟公司後台的實際訂單對一次。</p>`;
 }
