@@ -395,12 +395,20 @@ const lastRpt=l=>Math.max((l&&l.rpdt)||0,(l&&l.rplt)||0);
 const isNewRp=(m,l)=>!!(l&&repliesOf(l).length&&(readRp[keyOf(m)]||0)<lastRpt(l));
 // 給經銷部看的：只算團隊長寫的、且還沒看過
 const isNewLeaderRp=(m,l)=>!!(l&&l.rpl&&(readRp[keyOf(m)]||0)<(l.rplt||0));
+function applyRp(k,who,text,now){
+  const l=logs[k]; if(!l) return;
+  if(who==='leader'){ l.rpl=text; l.rplt=now; } else { l.rpd=text; l.rpdt=now; }
+  readRp[k]=lastRpt(l); saveRead();
+}
 async function sendReply(m,text){
-  const now=Date.now(), who=myWho();
-  await sendBody({key:keyOf(m),mode:'reply',who:who,rp:text,rpt:now});
-  const l=logs[keyOf(m)];
-  if(l){ if(who==='leader'){ l.rpl=text; l.rplt=now; } else { l.rpd=text; l.rpdt=now; }
-    readRp[keyOf(m)]=lastRpt(l); saveRead(); }
+  const now=Date.now(), who=myWho(), k=keyOf(m), q='rp:'+k;
+  const body={key:k,mode:'reply',who:who,rp:text,rpt:now};
+  // 先寫進這台裝置，畫面立刻更新，送不出去也不會不見
+  pending[q]={body:body,rpKey:k,rpWho:who,rpText:text,ts:now};
+  savePending();
+  applyRp(k,who,text,now);
+  try{ await sendBody(body); delete pending[q]; savePending(); }
+  catch(e){ throw e; }
 }
 function rpHtml(m,l,mt){
   const a=repliesOf(l); if(!a.length) return '';
@@ -415,7 +423,11 @@ const QKEY='morebeaut-wake-pending';
 let pending={};
 function loadPending(){ try{pending=JSON.parse(localStorage.getItem(QKEY)||'{}')||{};}catch(e){pending={};} }
 function savePending(){ try{localStorage.setItem(QKEY,JSON.stringify(pending));}catch(e){} }
-function applyPending(){ Object.keys(pending).forEach(k=>{ logs[k]=pending[k].rec; }); }
+function applyPending(){ Object.keys(pending).forEach(k=>{
+  const p=pending[k];
+  if(p.rpKey){ applyRp(p.rpKey,p.rpWho,p.rpText,p.ts); }
+  else if(p.rec){ logs[k]=p.rec; }
+}); }
 function pendCount(){ return Object.keys(pending).length; }
 let flushing=false;
 async function flush(silent){
@@ -1309,7 +1321,9 @@ function bindReply(){
          rg.textContent=t?'已送出 ✓':'已清除 ✓'; rg.classList.add('okbtn');
          toast(t?'回覆已送出，'+esc(editing.u)+' 會看到':'回覆已清除');
          setTimeout(()=>{ drawSheet(); bindReply(); render(); },900); }
-    catch(e){ rg.disabled=false; rg.textContent='再試一次'; toast('沒有送出，等一下再按'); }};
+    catch(e){ rg.textContent='已存起來 ·  補送中'; rg.classList.add('okbtn');
+      toast('伺服器慢，已存在手機裡，連上會自動補送');
+      setTimeout(()=>{ drawSheet(); bindReply(); render(); },1200); }};
 }
 function drawSheet(){
   const m=editing; if(!m) return;
