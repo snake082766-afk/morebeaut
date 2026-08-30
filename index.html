@@ -507,6 +507,10 @@ const teamOf=t=>DATA.members.filter(m=>m.t===t);
    關著的時候，經銷部仍看得到「競賽」分頁（標示未公布），方便你自己試算。 */
 const CUP_LIVE = false;
 
+const OUT=DATA.outside||[];
+const outOf=name=>OUT.filter(q=>q.u===name);
+const outTeam=t=>OUT.filter(q=>q.t===t);
+const outOrd=list=>list.filter(q=>{const l=logOf(q);return l&&l.ord;}).length;
 const WAKE=m=>m.g==='B'||m.g==='C'||m.g==='D';
 const OWNLINE=m=>!m.asg;              // 指派接手的人不列入個人階梯
 const wakeDen=ms=>ms.filter(WAKE).length;
@@ -515,16 +519,18 @@ const wakeDenP=ms=>ms.filter(m=>WAKE(m)&&OWNLINE(m)).length;
 const wakeOrdP=ms=>ms.filter(m=>{const l=logOf(m);return l&&l.ord&&WAKE(m)&&OWNLINE(m);}).length;
 function tier(n){ return n>=10?6000:n>=5?2500:n>=3?1000:0; }
 const nt2=n=>String(n).replace(/\B(?=(\d{3})+$)/g,',');
-function ladderLine(ord,den,hasAsg){
+function ladderLine(ord,den,hasAsg,myOut){
+  const oN=(myOut||[]).length, oD=outOrd(myOut||[]);
+  const outLine = oN? `<div class="denom" style="margin-top:2px">名單外還有 <b>${oN}</b> 位可以喚醒${oD?`（已喚醒 ${oD} 位）`:''}${CUP_LIVE?'　·　名單外喚醒最多的第一名有 5,000 元':''}　·　切到「名單外」看名字</div>`:'';
   if(!CUP_LIVE){
-    return `<div class="denom">喚醒＝B／C／D 三群有下單，不看金額。A 組是鞏固，不算喚醒。${hasAsg?'<br>指派接手的人也算在這裡。':''}</div>`;
+    return `<div class="denom">喚醒＝B／C／D 三群有下單，不看金額。A 組是鞏固，不算喚醒。${hasAsg?'<br>指派接手的人也算在這裡。':''}</div>`+outLine;
   }
   const now=tier(ord), nx=nextTier(ord);
   const reach=nx&&(ord+nx.need<=den);
   return `<div class="denom">喚醒競賽　·　目前 ${ord} 人${now?`＝ ${nt2(now)} 元`:'（還沒到第一階）'}
     ${nx?(reach?`　·　再 <b>${nx.need}</b> 人可到 ${nt2(nx.pay)} 元`
               :`　·　名單只有 ${den} 位，到不了下一階`):'　·　已是最高階'}</div>
-    <div class="denom" style="margin-top:2px">喚醒＝B／C／D 三群有下單，不看金額。A 組不列入競賽。${hasAsg?'<br>指派接手的人算團隊成績，不列入個人階梯。':''}</div>`;
+    <div class="denom" style="margin-top:2px">喚醒＝B／C／D 三群有下單，不看金額。A 組不列入競賽。${hasAsg?'<br>指派接手的人算團隊成績，不列入個人階梯。':''}</div>`+outLine;
 }
 function nextTier(n){ return n>=10?null:n>=5?{need:10-n,pay:6000}:n>=3?{need:5-n,pay:2500}:{need:3-n,pay:1000}; }
 function stateOf(m){
@@ -710,9 +716,11 @@ function renderUpline(isPeek){
     A:ms.filter(m=>m.g==='A').length,B:ms.filter(m=>m.g==='B').length,
     D:ms.filter(m=>['C','D','E'].includes(m.g)).length};
   const asgN=ms.filter(m=>m.asg).length;
+  const myOut=outOf(role.name);
   const F=[['todo','未接觸 '+counts.todo],['all','全部 '+counts.all],
            ['A','A 檔期主力 '+counts.A],['B','B 有庫存 '+counts.B],['D','沉睡 '+counts.D]]
-          .concat(asgN?[['asg','指派接手 '+asgN]]:[]);
+          .concat(asgN?[['asg','指派接手 '+asgN]]:[])
+          .concat(myOut.length?[['out','名單外 '+myOut.length]]:[]);
   let show=ms.filter(m=>filter==='all'?true:filter==='todo'?stateOf(m)==='todo'
            :filter==='asg'?!!m.asg
            :filter==='D'?['C','D','E'].includes(m.g):m.g===filter);
@@ -726,14 +734,15 @@ function renderUpline(isPeek){
       <div class="pn"><i>${s.con}</i><s>已接觸 / ${ms.length}</s></div>
       <div class="pn"><i>${s.rep}</i><s>有回應</s></div>
     </div><div class="bar"><div style="width:${wakeDen(ms)?s.ord/wakeDen(ms)*100:0}%"></div></div>
-      ${ladderLine(wakeOrdP(ms),wakeDenP(ms),ms.some(m=>m.asg))}
+      ${ladderLine(wakeOrdP(ms),wakeDenP(ms),ms.some(m=>m.asg),myOut)}
       ${loading?`<div class="loading">讀取紀錄中…</div>`:''}</div>
     <div class="filters">${F.map(([k,t])=>`<button class="fc" data-f="${k}" aria-pressed="${filter===k}">${t}</button>`).join('')}</div>
     ${(()=>{const nn=ms.filter(q=>isNewRp(q,logOf(q))).length;
       return nn?`<div class="rpbox" style="margin:12px 0 2px"><b>有 ${nn} 則新回覆</b>
         名單上有金色框的那幾位，點進去看，看完這個提示就會消失。</div>`:'';})()}
     ${loading?`<div class="loadbar">紀錄讀取中，先不要填 — 避免蓋掉先前填過的內容。約需 2–5 秒。</div>`:''}
-    <div class="list${loading?' pending':''}">${show.length?show.map(card).join('')
+    ${filter==='out'?outBlock(myOut,isPeek):''}
+    <div class="list${loading?' pending':''}" style="${filter==='out'?'display:none':''}">${show.length?show.map(card).join('')
       :`<div class="empty">這一組都記過了。<br>切到「全部」可以修改先前的紀錄。</div>`}
       ${hidden?`<div class="batchnote">先跑這 ${batch} 位。記完之後，下一批 ${hidden} 位會自動出現。<br>
         一次面對太多人反而會停在第五個。</div>`:''}
@@ -743,7 +752,13 @@ function renderUpline(isPeek){
   if(isPeek) bindPeek();
   else { $('#rr').onclick=()=>{showIntro=true;go();}; }
   document.querySelectorAll('.fc').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render()});
-  if(!isPeek) document.querySelectorAll('.mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+  if(!isPeek){
+    document.querySelectorAll('.mc[data-n]').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+    document.querySelectorAll('.mc[data-o]').forEach(b=>b.onclick=()=>openOut(b.dataset.o));
+  }
+  const oq=$('#oq'); if(oq) oq.oninput=()=>{const k=oq.value.trim();
+    document.querySelectorAll('#olist .mc').forEach(c=>{
+      c.style.display=(!k||c.dataset.k.indexOf(k)>=0)?'':'none';});};
 }
 function card(m){
   const st=stateOf(m),[lbl,cls]=STATE[st],l=logOf(m),[tag,line]=hookOf(m);
@@ -806,6 +821,25 @@ function listBlock(T,isPeek){
     :'你發了 SB 就點進那個人填盒數。這裡記的內容和該位上線看到的是同一筆，不會分開。'
       +(DUAL_UP[T]?'<br>你自己名下的名單在右上角「切到我的名單」，兩邊的紀錄是相通的。':'')}</p>`;
 }
+function cardO(m){
+  const l=logOf(m),st=l?(l.ord?'ordered':(l.block&&l.block!=='ok'&&l.block!=='noreply'?'blocked':(l.reply?'replied':'contacted'))):'todo';
+  const [lbl,cls]=STATE[st];
+  const cc=st==='ordered'?'intent':st==='blocked'?'blocked':(st!=='todo'?'done':'');
+  return `<button class="mc ${cc}" data-o="${esc(m.n)}" data-k="${esc(m.n+' '+(m.u||''))}">
+    <div class="mrow"><span class="mname">${esc(m.n)}</span>
+      <span class="tag D">外</span>
+      <span class="mstate ${cls}">${lbl}</span></div>
+    <div class="mmeta">${esc(m.st)}　·　最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}</div>
+    ${l&&(l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:''}
+  </button>`;
+}
+function outBlock(list,isPeek){
+  const done=outOrd(list);
+  return `<div class="denom" style="margin:12px 0 6px">名單外 ${list.length} 位　·　已喚醒 ${done} 位　·　睡超過半年，難度比名單內高，先做完名單內再往這裡</div>
+  <div class="lsearch"><input id="oq" type="search" placeholder="搜尋姓名"></div>
+  <div class="list" id="olist">${list.length?list.map(cardO).join(''):`<div class="empty">名單外沒有可喚醒的人。</div>`}</div>
+  <p class="note">${isPeek?'借看視角，不能代填。':'名單外喚醒最多的第一名有 5,000 元（至少 3 位）。這些人不算階梯獎金。'}</p>`;
+}
 function cardL(m){
   const st=stateOf(m),[lbl,cls]=STATE[st],l=logOf(m),[tag,line]=hookOf(m);
   const cc=(st==='ordered'||st==='intent')?'intent':st==='blocked'?'blocked':(st!=='todo'?'done':'');
@@ -866,10 +900,10 @@ function renderDept(){
   $('#app').innerHTML=bar('經銷部彙總','經銷部')+`
   <div class="wrap">
     <div class="prog"><div class="pnums">
-      <div class="pn"><i>${s.con}</i><s>已接觸 / 317</s></div>
+      <div class="pn"><i>${s.con}</i><s>已接觸 / ${DATA.members.length}</s></div>
       <div class="pn"><i>${s.rep}</i><s>有回應</s></div>
       <div class="pn"><i>${moneyN(s.amt)}</i><s>下單金額${moneyU(s.amt)}</s></div>
-    </div><div class="bar"><div style="width:${s.con/317*100}%"></div></div>
+    </div><div class="bar"><div style="width:${DATA.members.length?s.con/DATA.members.length*100:0}%"></div></div>
     <div class="denom">${curWk()}　·　本週新增 ${TEAMS.reduce((a,t)=>a+statWk(teamOf(t),curWk()).con,0)} 筆　·　僅你看得到四隊並排</div>
     <button class="denom sbjump" id="sbjump">SB 已給 ${s.sb} 盒 / ${s.sbn} 人　·　其中 ${s.sbi} 人已下單${s.sbn?`（${Math.round(s.sbi/s.sbn*100)}%）`:''}　·　看名單 ›</button></div>
     <div class="tabs">${TAB.map(([k,t])=>`<button data-t="${k}" aria-pressed="${tab===k}">${t}</button>`).join('')}</div>
@@ -1290,6 +1324,12 @@ function openSheetKey(k){
   if(!m){ toast('找不到這筆'); return; }
   openMember(m);
 }
+function openOut(name){
+  if(loading){ toast('紀錄還在讀取，等一下再填'); return; }
+  const pool = (role&&role.type==='leader')?outTeam(role.team)
+             : (role&&role.type==='dept')?OUT : outOf(role.name);
+  openMember(pool.find(q=>q.n===name));
+}
 function openSheet(name){
   if(loading){ toast('紀錄還在讀取，等一下再填，才不會蓋掉先前填過的'); return; }
   const pool=role&&role.type==='leader'?teamOf(role.team):(role&&role.type==='dept'?DATA.members:mine());
@@ -1352,7 +1392,7 @@ function drawSheet(){
   $('#sheet').innerHTML=`
     <div class="grab"></div>
     <div class="sh"><h3>${esc(m.n)}</h3>
-      <p>${m.gn}　·　最後買 ${esc(m.p||'無紀錄')}</p></div>
+      <p>${m.gn||('名單外・'+esc(m.st||''))}　·　最後買 ${esc(m.p||'無紀錄')}</p></div>
     <div class="sb">
       ${rpHtml(m,logOf(m))}
       ${(!canReply()&&repliesOf(logOf(m)).length)?(()=>{
@@ -1367,6 +1407,10 @@ function drawSheet(){
         <textarea id="rp" rows="2" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc(mine)}</textarea>
         <div class="denom" id="rpc" style="margin-top:4px">${rpLeft(mine.length)}</div>
         <button class="reread" id="rpgo" style="margin-top:8px">${mine.trim()?'更新回覆':'送出回覆'}</button></div>`;})():''}
+      ${!m.g?`<div class="offwarn" style="background:#EDF5F1;border-color:#7FA99B;color:#3F6B5C">
+        <b>這位是名單以外的人</b>
+        ${esc(m.st||'')}，睡得比名單上的人久。他回來下單不算階梯獎金，
+        但列入「名單外喚醒最多第一名 5,000 元」的計算。</div>`:''}
       ${m.g==='A'?`<div class="offwarn" style="background:#F1EFE8;border-color:#D9D2C4;color:#5C5348">
         <b>這位是檔期主力，要鞏固、不算喚醒</b>
         他本來就在買，下單一樣有返利，SB 也可以給他。<br>
@@ -1376,7 +1420,9 @@ function drawSheet(){
       <div class="fld"><span class="lb">對方有回應嗎</span><div class="seg">
         <button data-r="0" aria-pressed="${draft.reply===false}">沒有回應</button>
         <button data-r="1" aria-pressed="${draft.reply===true}">有回應</button></div></div>
-      <div class="fld"><span class="lb">下單了嗎${m.g==='A'?'　·　本筆不算喚醒':'　·　喚醒算不算，看這一格'}</span><div class="seg">
+      <div class="fld"><span class="lb">下單了嗎${m.g==='A'?'　·　本筆不算喚醒':(!m.g?'　·　算名單外':'　·　喚醒算不算，看這一格')}</span>
+        ${m.g==='A'?'':`<div class="denom" style="margin:-2px 0 6px">九月競賽須為 SB 活動組合（3+1／4+4／10+10）才計入；其他商品照樣記錄，但不算競賽人數。</div>`}
+        <div class="seg">
         <button data-o="0" aria-pressed="${draft.ord===false}">還沒下單</button>
         <button data-o="1" aria-pressed="${draft.ord===true}">已經下單</button></div></div>
       ${draft.ord===true?`<div class="fld"><label class="lb" for="am">下單金額（選填，不影響喚醒認定）</label>
