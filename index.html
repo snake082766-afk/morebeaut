@@ -1383,6 +1383,11 @@ function drawSheet(){
         <textarea id="rp" rows="3" maxlength="${RPMAX}" placeholder="針對他寫的狀況，具體回一句">${esc((L0||{}).rpd||'')}</textarea>
         <div class="denom" id="rpc" style="margin-top:4px">${rpLeft(((L0||{}).rpd||'').length)}</div>
         <button class="save" id="rpgo" style="margin-top:10px">${((L0||{}).rpd||'').trim()?'更新回覆':'送出回覆'}</button></div>`:''}
+      ${m.g==='A'
+        ?`<div class="denom" style="margin:2px 0 10px;padding:9px 11px;background:#F1EFE8;border-radius:8px">
+           <b>A 組・鞏固</b>　不列入喚醒人數。上線的畫面上不會出現 SB 組合的提示。</div>`
+        :`<div class="denom" style="margin:2px 0 10px;padding:9px 11px;background:#EDF5F1;border-radius:8px">
+           <b>${m.g} 組・喚醒對象</b>　上線的畫面上會顯示：九月競賽須為 SB 活動組合（3+1／4+4／10+10）才計入。</div>`}
       <p class="note">經銷部只回覆，不代填。接觸紀錄由該位上線自己填寫。</p>
       <button class="skip" id="cx">關閉</button>
     </div>`;
