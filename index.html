@@ -1,4 +1,6 @@
 <meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>茉本喚醒追蹤</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1385,9 +1387,9 @@ function drawSheet(){
         <button class="save" id="rpgo" style="margin-top:10px">${((L0||{}).rpd||'').trim()?'更新回覆':'送出回覆'}</button></div>`:''}
       ${m.g==='A'
         ?`<div class="denom" style="margin:2px 0 10px;padding:9px 11px;background:#F1EFE8;border-radius:8px">
-           <b>A 組・鞏固</b>　不列入喚醒人數。上線的畫面上不會出現 SB 組合的提示。</div>`
+           <b>A 組・鞏固</b>　不列入喚醒人數。</div>`
         :`<div class="denom" style="margin:2px 0 10px;padding:9px 11px;background:#EDF5F1;border-radius:8px">
-           <b>${m.g} 組・喚醒對象</b>　上線的畫面上會顯示：九月競賽須為 SB 活動組合（3+1／4+4／10+10）才計入。</div>`}
+           <b>${m.g} 組・喚醒對象</b>　九月有下單即算喚醒，不限商品。</div>`}
       <p class="note">經銷部只回覆，不代填。接觸紀錄由該位上線自己填寫。</p>
       <button class="skip" id="cx">關閉</button>
     </div>`;
@@ -1426,7 +1428,8 @@ function drawSheet(){
         <button data-r="0" aria-pressed="${draft.reply===false}">沒有回應</button>
         <button data-r="1" aria-pressed="${draft.reply===true}">有回應</button></div></div>
       <div class="fld"><span class="lb">下單了嗎${m.g==='A'?'　·　本筆不算喚醒':(!m.g?'　·　算名單外':'　·　喚醒算不算，看這一格')}</span>
-        ${m.g==='A'?'':`<div class="denom" style="margin:-2px 0 6px">九月競賽須為 SB 活動組合（3+1／4+4／10+10）才計入；其他商品照樣記錄，但不算競賽人數。</div>`}
+        ${m.g==='A'?'':`<div class="denom" style="margin:-2px 0 6px">九月有下單就算喚醒，不限商品、不限金額。<br>
+          他不願意自己進 APP 的話，你可以代下單，但收貨人要填他的姓名地址。</div>`}
         <div class="seg">
         <button data-o="0" aria-pressed="${draft.ord===false}">還沒下單</button>
         <button data-o="1" aria-pressed="${draft.ord===true}">已經下單</button></div></div>
