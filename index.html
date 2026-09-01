@@ -319,9 +319,18 @@ let peek=null; // 經銷部借看團隊長/上線視角，僅供檢視
 
 /* ---------- 資料存取：Google 試算表 ---------- */
 let netErr='', reviving=false;
+function myCode(){
+  try{
+    const q=new URLSearchParams(location.search).get('u');
+    if(q) return q.trim().toLowerCase();
+    const h=(location.hash||'').replace('#','').trim();
+    if(h) return h.toLowerCase();
+    return (localStorage.getItem('morebeaut-wake-token')||'').toLowerCase();
+  }catch(e){ return ''; }
+}
 async function load(){
   try{
-    const r=await fetch(API+'?t='+Date.now(),{method:'GET'});
+    const r=await fetch(API+'?t='+Date.now()+'&k='+encodeURIComponent(myCode()),{method:'GET'});
     if(!r.ok){ netErr='伺服器回 HTTP '+r.status+'（部署或權限問題）'; return; }
     const txt=await r.text();
     let j=null;
@@ -374,7 +383,7 @@ async function sendBody(body,ms){
   const ac=new AbortController();
   const to=setTimeout(()=>ac.abort(),ms||12000);
   try{
-    const r=await fetch(API,{method:'POST',body:JSON.stringify(body),signal:ac.signal});
+    const r=await fetch(API,{method:'POST',body:JSON.stringify({...body,k:myCode()}),signal:ac.signal});
     const j=await r.json();
     if(!j||!j.ok) throw new Error('write failed');
   } finally { clearTimeout(to); }
@@ -507,7 +516,7 @@ const mine=()=>DATA.members.filter(m=>m.u===role.name);
 const teamOf=t=>DATA.members.filter(m=>m.t===t);
 /* 喚醒競賽公布開關：正式公布當天改成 true，上線與團隊長才會看到階梯與獎金。
    關著的時候，經銷部仍看得到「競賽」分頁（標示未公布），方便你自己試算。 */
-const CUP_LIVE = false;
+const CUP_LIVE = true;
 
 const OUT=DATA.outside||[];
 const outOf=name=>OUT.filter(q=>q.u===name);
