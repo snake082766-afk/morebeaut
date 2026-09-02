@@ -824,10 +824,10 @@ function listBlock(T,isPeek){
   const tOut=outTeam(T);
   const F=[['all','全部 '+ms.length],
            ['todo','未接觸 '+ms.filter(m=>stateOf(m)==='todo').length],
-           ['sb','已給 SB '+ms.filter(m=>logOf(m).sb>0).length]]
+           ['sb','已給 SB '+ms.filter(m=>(logOf(m)||{}).sb>0).length]]
           .concat(nn?[['rp','新回覆 '+nn]]:[])
           .concat(tOut.length?[['out','名單外 '+tOut.length]]:[]);
-  const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?logOf(m).sb>0
+  const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?(logOf(m)||{}).sb>0
     :lfilter==='rp'?isNewRp(m,logOf(m)):stateOf(m)==='todo');
   return `<div class="lsearch"><input id="lq" type="search" placeholder="搜尋姓名或上線" value="${esc(lq)}"></div>
   <div class="filters">${F.map(([k,t])=>`<button class="fc" data-lf="${k}" aria-pressed="${lfilter===k}">${t}</button>`).join('')}</div>
@@ -1156,7 +1156,7 @@ function evBlock(){
 function todoBlock(){
   const silent=DATA.uplines.filter(u=>!DATA.members.some(m=>m.u===u.n&&logOf(m)));
   const rec=DATA.members.filter(m=>logOf(m));
-  const norp=rec.filter(m=>!((logOf(m).rpd||'').trim())).length;
+  const norp=rec.filter(m=>!(((logOf(m)||{}).rpd||'').trim())).length;
   const newrp=DATA.members.filter(m=>isNewLeaderRp(m,logOf(m))).length;
   const R=[
     ['t-silent', silent.length, '還沒動的上線', '一次也沒記錄過，先確認連結收到了沒'],
@@ -1275,8 +1275,8 @@ function detailBlock(ms,who){
     .concat(who==='dept'&&OUT.length?[['out','名單外 '+OUT.length]]:[])
     .concat(nrp?[['rp','新回覆 '+nrp]]:[])
     .concat([['mine','我回過 '+nmine],['norp','還沒回 '+nnone]])
-    .concat([['sb','已給 SB '+rec.filter(m=>logOf(m).sb>0).length],
-           ['ord','已下單 '+rec.filter(m=>logOf(m).ord).length],['block','有卡點'],['noreply','無回應']]);
+    .concat([['sb','已給 SB '+rec.filter(m=>(logOf(m)||{}).sb>0).length],
+           ['ord','已下單 '+rec.filter(m=>(logOf(m)||{}).ord).length],['block','有卡點'],['noreply','無回應']]);
   let show=rec.filter(m=>{const l=logOf(m);
     return dfilter==='all'?true
       :dfilter==='out'?false
