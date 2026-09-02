@@ -728,6 +728,8 @@ function renderUpline(isPeek){
     D:ms.filter(m=>['C','D','E'].includes(m.g)).length};
   const asgN=ms.filter(m=>m.asg).length;
   const myOut=outOf(ctx.name);
+  if(filter==='out'&&!myOut.length) filter='all';
+  if(filter==='asg'&&!asgN) filter='all';
   const F=[['todo','未接觸 '+counts.todo],['all','全部 '+counts.all],
            ['A','A 檔期主力 '+counts.A],['B','B 有庫存 '+counts.B],['D','沉睡 '+counts.D]]
           .concat(asgN?[['asg','指派接手 '+asgN]]:[])
@@ -817,6 +819,7 @@ function renderLeader(isPeek){
 }
 function listBlock(T,isPeek){
   const ms=teamOf(T);
+  if(lfilter==='out'&&!outTeam(T).length) lfilter='all';
   const nn=ms.filter(m=>isNewRp(m,logOf(m))).length;
   const tOut=outTeam(T);
   const F=[['all','全部 '+ms.length],
@@ -1263,6 +1266,7 @@ function blockBlock(ms,who){
 
 /* ===== 明細 ===== */
 function detailBlock(ms,who){
+  if(dfilter==='out'&&who!=='dept') dfilter='all';   // 名單外只有經銷部有，切身分時自動回到全部
   const rec=ms.filter(m=>logOf(m));
   const myRp=m=>{const l=logOf(m); return ((who==='dept'?(l.rpd||''):(l.rpl||'')).trim())!=='';};
   const nrp=rec.filter(m=>who==='dept'?isNewLeaderRp(m,logOf(m)):isNewRp(m,logOf(m))).length;
