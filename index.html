@@ -727,7 +727,7 @@ function renderUpline(isPeek){
     A:ms.filter(m=>m.g==='A').length,B:ms.filter(m=>m.g==='B').length,
     D:ms.filter(m=>['C','D','E'].includes(m.g)).length};
   const asgN=ms.filter(m=>m.asg).length;
-  const myOut=outOf(role.name);
+  const myOut=outOf(ctx.name);
   const F=[['todo','未接觸 '+counts.todo],['all','全部 '+counts.all],
            ['A','A 檔期主力 '+counts.A],['B','B 有庫存 '+counts.B],['D','沉睡 '+counts.D]]
           .concat(asgN?[['asg','指派接手 '+asgN]]:[])
@@ -839,17 +839,20 @@ function cardO(m){
   const l=logOf(m),st=l?(l.ord?'ordered':(l.block&&l.block!=='ok'&&l.block!=='noreply'?'blocked':(l.reply?'replied':'contacted'))):'todo';
   const [lbl,cls]=STATE[st];
   const cc=st==='ordered'?'intent':st==='blocked'?'blocked':(st!=='todo'?'done':'');
-  return `<button class="mc ${cc}" data-o="${esc(m.n)}" data-k="${esc(m.n+' '+(m.u||''))}">
+  const dept=role&&role.type==='dept'&&!peek;
+  return `<button class="mc ${cc}" data-o="${esc(m.n)}" data-k="${esc(m.n+' '+(m.u||'')+' '+(m.t||''))}">
     <div class="mrow"><span class="mname">${esc(m.n)}</span>
       <span class="tag D">外</span>
       <span class="mstate ${cls}">${lbl}</span></div>
-    <div class="mmeta">${esc(m.st)}　·　最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}</div>
+    <div class="mmeta">${dept?esc(m.t)+'　·　'+esc(m.u)+'　·　':''}${esc(m.st)}　·　最後下單 ${m.ld||'無紀錄'}${m.sm!=null?`　停 ${m.sm} 個月`:''}</div>
     ${l&&(l.note||'').trim()?`<div class="hook">${esc(l.note)}</div>`:''}
   </button>`;
 }
 function outBlock(list,isPeek){
   const done=outOrd(list);
+  const byT=['TOP','PRINCESSES','THE ONE','RICH'].map(t=>[t,list.filter(q=>q.t===t).length]).filter(z=>z[1]);
   return `<div class="denom" style="margin:12px 0 6px">名單外 ${list.length} 位　·　已喚醒 ${done} 位　·　睡超過半年，難度比名單內高，先做完名單內再往這裡</div>
+  ${byT.length>1?`<div class="denom" style="margin:-2px 0 8px">${byT.map(z=>z[0]+' '+z[1]).join('　·　')}</div>`:''}
   ${list.length>200?`<div class="denom" style="margin:-2px 0 8px;color:#A8A093">人數多，用上面的搜尋框找人比較快。</div>`:''}
   <div class="lsearch"><input id="oq" type="search" placeholder="搜尋姓名"></div>
   <div class="list" id="olist">${list.length?list.map(cardO).join(''):`<div class="empty">名單外沒有可喚醒的人。</div>`}</div>
