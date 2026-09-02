@@ -818,16 +818,19 @@ function renderLeader(isPeek){
 function listBlock(T,isPeek){
   const ms=teamOf(T);
   const nn=ms.filter(m=>isNewRp(m,logOf(m))).length;
+  const tOut=outTeam(T);
   const F=[['all','全部 '+ms.length],
            ['todo','未接觸 '+ms.filter(m=>stateOf(m)==='todo').length],
            ['sb','已給 SB '+ms.filter(m=>logOf(m).sb>0).length]]
-          .concat(nn?[['rp','新回覆 '+nn]]:[]);
+          .concat(nn?[['rp','新回覆 '+nn]]:[])
+          .concat(tOut.length?[['out','名單外 '+tOut.length]]:[]);
   const show=ms.filter(m=>lfilter==='all'?true:lfilter==='sb'?logOf(m).sb>0
     :lfilter==='rp'?isNewRp(m,logOf(m)):stateOf(m)==='todo');
   return `<div class="lsearch"><input id="lq" type="search" placeholder="搜尋姓名或上線" value="${esc(lq)}"></div>
   <div class="filters">${F.map(([k,t])=>`<button class="fc" data-lf="${k}" aria-pressed="${lfilter===k}">${t}</button>`).join('')}</div>
   ${loading?`<div class="loadbar">紀錄讀取中，先不要填 — 避免蓋掉先前填過的內容。約需 2–5 秒。</div>`:''}
-  <div class="list${loading?' pending':''}" id="llist">${show.length?show.map(cardL).join(''):`<div class="empty">沒有符合的人。</div>`}</div>
+  ${lfilter==='out'?outBlock(tOut,isPeek):''}
+  <div class="list${loading?' pending':''}" id="llist" style="${lfilter==='out'?'display:none':''}">${show.length?show.map(cardL).join(''):`<div class="empty">沒有符合的人。</div>`}</div>
   <p class="note">${isPeek?'借看視角，不能代填。'
     :'你發了 SB 就點進那個人填盒數。這裡記的內容和該位上線看到的是同一筆，不會分開。'
       +(DUAL_UP[T]?'<br>你自己名下的名單在右上角「切到我的名單」，兩邊的紀錄是相通的。':'')}</p>`;
@@ -847,6 +850,7 @@ function cardO(m){
 function outBlock(list,isPeek){
   const done=outOrd(list);
   return `<div class="denom" style="margin:12px 0 6px">名單外 ${list.length} 位　·　已喚醒 ${done} 位　·　睡超過半年，難度比名單內高，先做完名單內再往這裡</div>
+  ${list.length>200?`<div class="denom" style="margin:-2px 0 8px;color:#A8A093">人數多，用上面的搜尋框找人比較快。</div>`:''}
   <div class="lsearch"><input id="oq" type="search" placeholder="搜尋姓名"></div>
   <div class="list" id="olist">${list.length?list.map(cardO).join(''):`<div class="empty">名單外沒有可喚醒的人。</div>`}</div>
   <p class="note">${isPeek?'借看視角，不能代填。':'名單外喚醒最多的第一名有 5,000 元（至少 3 位）。這些人不算階梯獎金。'}</p>`;
@@ -866,7 +870,13 @@ function cardL(m){
 }
 function bindList(isPeek){
   document.querySelectorAll('[data-lf]').forEach(b=>b.onclick=()=>{lfilter=b.dataset.lf;render()});
-  if(!isPeek) document.querySelectorAll('#llist .mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+  if(!isPeek){
+    document.querySelectorAll('#llist .mc').forEach(b=>b.onclick=()=>openSheet(b.dataset.n));
+    document.querySelectorAll('#olist .mc[data-o]').forEach(b=>b.onclick=()=>openOut(b.dataset.o));
+  }
+  const oq2=$('#oq'); if(oq2) oq2.oninput=()=>{const k=oq2.value.trim();
+    document.querySelectorAll('#olist .mc').forEach(c=>{
+      c.style.display=(!k||c.dataset.k.indexOf(k)>=0)?'':'none';});};
   const qi=$('#lq'); if(!qi) return;
   const apply=()=>{const k=lq.trim();
     document.querySelectorAll('#llist .mc').forEach(c=>{
@@ -1255,12 +1265,14 @@ function detailBlock(ms,who){
   const nrp=rec.filter(m=>who==='dept'?isNewLeaderRp(m,logOf(m)):isNewRp(m,logOf(m))).length;
   const nmine=rec.filter(myRp).length, nnone=rec.length-nmine;
   const D=[['all','全部 '+rec.length]]
+    .concat(who==='dept'&&OUT.length?[['out','名單外 '+OUT.length]]:[])
     .concat(nrp?[['rp','新回覆 '+nrp]]:[])
     .concat([['mine','我回過 '+nmine],['norp','還沒回 '+nnone]])
     .concat([['sb','已給 SB '+rec.filter(m=>logOf(m).sb>0).length],
            ['ord','已下單 '+rec.filter(m=>logOf(m).ord).length],['block','有卡點'],['noreply','無回應']]);
   let show=rec.filter(m=>{const l=logOf(m);
     return dfilter==='all'?true
+      :dfilter==='out'?false
       :dfilter==='rp'?(who==='dept'?isNewLeaderRp(m,l):isNewRp(m,l))
       :dfilter==='mine'?myRp(m)
       :dfilter==='norp'?!myRp(m)
@@ -1269,6 +1281,9 @@ function detailBlock(ms,who){
   show.sort(dfilter==='sb'
     ?(a,b)=>(logOf(b).sb||0)-(logOf(a).sb||0)||(logOf(b).amt||0)-(logOf(a).amt||0)
     :(a,b)=>((logOf(b).ord?1:0)-(logOf(a).ord?1:0))||(logOf(b).amt||0)-(logOf(a).amt||0)||logOf(b).ts-logOf(a).ts);
+  if(dfilter==='out') return `
+  <div class="filters">${D.map(([k,t])=>`<button class="fc" data-d="${k}" aria-pressed="${dfilter===k}">${t}</button>`).join('')}</div>
+  ${outBlock(OUT,false)}`;
   return `
   <div class="filters">${D.map(([k,t])=>`<button class="fc" data-d="${k}" aria-pressed="${dfilter===k}">${t}</button>`).join('')}</div>
   ${show.length?show.map(m=>{const l=logOf(m);
@@ -1304,6 +1319,10 @@ function bindTap(){
   document.querySelectorAll('.dc.tapx').forEach(b=>{
     b.style.cursor='pointer';
     b.onclick=()=>openSheetKey(b.dataset.key);});
+  document.querySelectorAll('#olist .mc[data-o]').forEach(b=>b.onclick=()=>openOut(b.dataset.o));
+  const oq3=$('#oq'); if(oq3) oq3.oninput=()=>{const k=oq3.value.trim();
+    document.querySelectorAll('#olist .mc').forEach(c=>{
+      c.style.display=(!k||c.dataset.k.indexOf(k)>=0)?'':'none';});};
 }
 function bindDetail(){
   bindTap();
